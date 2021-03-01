@@ -1,0 +1,16 @@
+{
+	"name": "3 create FctOrders",
+	"properties": {
+		"content": {
+			"query": "/* order_item_summary should have filled with the following query, but I don't have this table:\n    select \n        o.order_key,\n        sum(o.gross_item_sales_amount) as gross_item_sales_amount,\n        sum(o.item_discount_amount) as item_discount_amount,\n        sum(o.item_tax_amount) as item_tax_amount,\n        sum(o.net_item_sales_amount) as net_item_sales_amount\n    from orders_items o\n    group by\n        1\n*/\n\n--FctOrders\nWith order_item_summary as (\n\n    select \n        o.l_orderkey,\n        sum(o.l_extendedprice) as gross_item_sales_amount,\n        sum(o.l_discount) as item_discount_amount,\n        sum(o.l_tax) as item_tax_amount,\n        sum(o.l_extendedprice) as net_item_sales_amount\n    from lineitems o\n    group by\n        1\n),\n\n\n      select \n        o.o_orderkey, \n        o.o_orderdate,\n        o.o_custkey,\n        o.o_orderstatus,\n        o.o_orderpriority,\n        o.o_clerk,\n        o.o_shippriority,\n                \n        1 as order_count,               \n        s.gross_item_sales_amount,\n        s.item_discount_amount,\n        s.item_tax_amount,\n        s.net_item_sales_amount\n    from\n        orders o\n        join\n        order_item_summary s\n            on o.order_key = s.order_key\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"name": "SQL Provisioned",
+				"type": "SqlPool"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

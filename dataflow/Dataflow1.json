@@ -1,0 +1,32 @@
+{
+	"name": "Dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "RvDSynapseProvisioned",
+						"type": "DatasetReference"
+					},
+					"name": "synapse"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "MIVT",
+						"type": "LinkedServiceReference"
+					},
+					"schemaLinkedService": {
+						"referenceName": "MIVT",
+						"type": "LinkedServiceReference"
+					},
+					"name": "callcenter"
+				}
+			],
+			"transformations": [],
+			"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tlimit: 100,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: 'select * from dbo.call_center',\n\tformat: 'query',\n\tstaged: false) ~> synapse\nsynapse sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tentity: 'call_center',\n\tformat: 'cdm',\n\tmanifestType: 'manifest',\n\tentityPath: 'call_center',\n\tpartitionPath: 'year',\n\tfolderPath: 'vgz',\n\tfileSystem: 'mivt',\n\tsubformat: 'parquet',\n\tcorpusPath: 'vgz',\n\tcorpusStore: 'adlsgen2',\n\tadlsgen2_fileSystem: 'mivt',\n\ttruncate: true,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> callcenter"
+		}
+	}
+}

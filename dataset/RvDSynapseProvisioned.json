@@ -1,0 +1,13 @@
+{
+	"name": "RvDSynapseProvisioned",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "rvdworkspace-WorkspaceDefaultSqlServer",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

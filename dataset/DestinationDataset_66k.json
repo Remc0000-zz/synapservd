@@ -1,0 +1,72 @@
+{
+	"name": "DestinationDataset_66k",
+	"properties": {
+		"annotations": [],
+		"type": "SqlPoolTable",
+		"schema": [
+			{
+				"name": "s_suppkey",
+				"type": "bigint",
+				"precision": 19,
+				"scale": 255
+			},
+			{
+				"name": "s_name",
+				"type": "char",
+				"precision": 255,
+				"scale": 255
+			},
+			{
+				"name": "s_address",
+				"type": "varchar",
+				"precision": 255,
+				"scale": 255
+			},
+			{
+				"name": "supplier_nation_key",
+				"type": "int",
+				"precision": 10,
+				"scale": 255
+			},
+			{
+				"name": "supplier_nation_name",
+				"type": "char",
+				"precision": 255,
+				"scale": 255
+			},
+			{
+				"name": "supplier_region_key",
+				"type": "int",
+				"precision": 10,
+				"scale": 255
+			},
+			{
+				"name": "supplier_region_name",
+				"type": "char",
+				"precision": 255,
+				"scale": 255
+			},
+			{
+				"name": "s_phone",
+				"type": "char",
+				"precision": 255,
+				"scale": 255
+			},
+			{
+				"name": "s_acctbal",
+				"type": "float",
+				"precision": 15,
+				"scale": 255
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "DimSupplier"
+		},
+		"sqlPool": {
+			"referenceName": "SQL Provisioned",
+			"type": "SqlPoolReference"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

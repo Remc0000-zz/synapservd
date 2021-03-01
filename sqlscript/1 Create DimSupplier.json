@@ -1,0 +1,16 @@
+{
+	"name": "1 Create DimSupplier",
+	"properties": {
+		"content": {
+			"query": "create view DimSupplier as select \n        s.s_suppkey,\n        s.s_name,\n        s.s_address,\n        n.n_nationkey as supplier_nation_key,\n        n.n_name as supplier_nation_name,\n        r.r_regionkey as supplier_region_key,\n        r.r_name as supplier_region_name,\n        s.s_phone,\n        s.s_acctbal\n    from\n        supplier s\n        join\n        nation n\n            on s.s_nationkey = n.n_nationkey\n        join\n        region r\n            on n.n_regionkey = r.r_regionkey\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"name": "SQL Provisioned",
+				"type": "SqlPool"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

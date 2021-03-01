@@ -1,0 +1,56 @@
+{
+	"name": "CopyPipeline_6ra",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_6ra",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "Source",
+						"value": "dbo.call_center"
+					},
+					{
+						"name": "Destination",
+						"value": "rvdsynapseadlsfilesystem//callcenter"
+					}
+				],
+				"typeProperties": {
+					"source": {
+						"type": "SqlPoolSource"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "SourceDataset_6ra",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DestinationDataset_6ra",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2020-06-08T12:48:03Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

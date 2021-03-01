@@ -1,0 +1,16 @@
+{
+	"name": "2 Create DimCustomer",
+	"properties": {
+		"content": {
+			"query": "-- type your sql script here, we now have intellisense\n\nselect \n        c.c_custkey,\n        c.c_name,\n        c.c_address,\n        n.n_nationkey as customer_nation_key,\n        n.n_name as customer_nation_name,\n        r.r_regionkey as customer_region_key,\n        r.r_name as customer_region_name,\n        c.c_phone,\n        c.c_acctbal,\n        c.c_mktsegment\n    from\n        customer c\n        join\n        nation n\n            on c.c_nationkey = n.n_nationkey\n        join\n        region r\n            on n.n_regionkey = r.r_regionkey\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"name": "SQL Provisioned",
+				"type": "SqlPool"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

@@ -2,68 +2,47 @@
 	"name": "AzureSynapseAnalyticsTable1",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "synretailcdpprod-WorkspaceDefaultSqlServer",
+			"referenceName": "rvdworkspace-WorkspaceDefaultSqlServer",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
 		"type": "AzureSqlDWTable",
 		"schema": [
 			{
-				"name": "CreatedAt",
-				"type": "nvarchar"
-			},
-			{
-				"name": "Hashtag",
-				"type": "nvarchar"
-			},
-			{
-				"name": "Tweet",
-				"type": "nvarchar"
-			},
-			{
-				"name": "City",
-				"type": "nvarchar"
-			},
-			{
-				"name": "UserName",
-				"type": "nvarchar"
-			},
-			{
-				"name": "RetweetCount",
+				"name": "s_suppkey",
 				"type": "bigint",
 				"precision": 19
 			},
 			{
-				"name": "FavouriteCount",
-				"type": "bigint",
-				"precision": 19
+				"name": "s_name",
+				"type": "char"
 			},
 			{
-				"name": "Sentiment",
-				"type": "nvarchar"
+				"name": "s_address",
+				"type": "varchar"
 			},
 			{
-				"name": "SentimentScore",
-				"type": "bigint",
-				"precision": 19
+				"name": "s_nationkey",
+				"type": "int",
+				"precision": 10
 			},
 			{
-				"name": "IsRetweet",
-				"type": "bigint",
-				"precision": 19
+				"name": "s_phone",
+				"type": "char"
 			},
 			{
-				"name": "HourOfDay",
-				"type": "nvarchar"
+				"name": "s_acctbal",
+				"type": "float",
+				"precision": 15
 			},
 			{
-				"name": "Language",
-				"type": "nvarchar"
+				"name": "s_comment",
+				"type": "varchar"
 			}
 		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "TwitterAnalytics"
+			"table": "supplier"
 		}
 	},
 	"type": "Microsoft.Synapse/workspaces/datasets"

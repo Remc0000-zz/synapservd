@@ -1,0 +1,11 @@
+{
+	"name": "Demos Remco",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "PowerBIWorkspace",
+		"typeProperties": {
+			"workspaceID": "6fd023ee-7641-497e-a746-5f2dc83732f1"
+		}
+	}
+}

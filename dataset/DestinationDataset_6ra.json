@@ -1,0 +1,21 @@
+{
+	"name": "DestinationDataset_6ra",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "rvdworkspace-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "callcenter",
+				"fileSystem": "rvdsynapseadlsfilesystem"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}
