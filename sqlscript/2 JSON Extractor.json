@@ -1,0 +1,16 @@
+{
+	"name": "2 JSON Extractor",
+	"properties": {
+		"content": {
+			"query": " --JSON Extractor \n    --First, Azure Synapse enables you to store JSON in standard textual format, use standard SQL language for querying JSON data\n        SELECT top (100) * from  dbo.[TwitterRawData] \n\n\n -- Second, let's take JSON data and extract specific structured columns.\n\n SELECT   \n       JSON_VALUE( TwitterData,'$.Time') AS Time, \n       JSON_VALUE( TwitterData,'$.Hashtag') AS Hashtag, \n       JSON_VALUE( TwitterData,'$.Tweet') AS Tweet, \n       JSON_VALUE( TwitterData,'$.City') AS City , \n       JSON_VALUE( TwitterData,'$.Sentiment') AS Sentiment , \n       JSON_VALUE( TwitterData,'$.Language') AS Language  \nFROM dbo.[TwitterRawData] WHERE    ISJSON(TwitterData) > 0 \n\n--## Third, let's filter for #sunglasses.\n    --The query below fetches JSON data and filters it by hashtag.<br>\n    --Please note, this extracts specific columns in a structured format\n\nSELECT   \n       JSON_VALUE( TwitterData,'$.Time') AS Time, \n       JSON_VALUE( TwitterData,'$.Hashtag') AS Hashtag, \n       JSON_VALUE( TwitterData,'$.Tweet') AS Tweet, \n       JSON_VALUE( TwitterData,'$.City') AS City , \n       JSON_VALUE( TwitterData,'$.Sentiment') AS Sentiment , \n       JSON_VALUE( TwitterData,'$.Language') AS Language  \nFROM dbo.[TwitterRawData]  \nWHERE    ISJSON(TwitterData) > 0 And JSON_VALUE( TwitterData,'$.Hashtag')='#sunglasses'\n\n\n-- petsa\nselect * from (\nSELECT   \n       JSON_VALUE( TwitterData,'$.Time') AS Time, \n       JSON_VALUE( TwitterData,'$.Hashtag') AS Hashtag, \n       JSON_VALUE( TwitterData,'$.Tweet') AS Tweet, \n       JSON_VALUE( TwitterData,'$.City') AS City , \n       JSON_VALUE( TwitterData,'$.Sentiment') AS Sentiment , \n       JSON_VALUE( TwitterData,'$.Language') AS Language  \nFROM dbo.[TwitterRawData]  \nWHERE    ISJSON(TwitterData) > 0) as sub\nwhere sub.Hashtag = '#sunglasses'\n\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"name": "SQLPool01",
+				"type": "SqlPool"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

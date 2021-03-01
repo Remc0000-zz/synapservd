@@ -1,0 +1,63 @@
+{
+	"name": "AzureMigrationIntegration",
+	"properties": {
+		"activities": [
+			{
+				"name": "Execute Market DB Migration",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "2 MarketingDBMigration",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Execute Sales DB Migration",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Execute Market DB Migration",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "3 SalesDBMigration",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Execute Twitter Data Migration",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Execute Sales DB Migration",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "4 TwitterDataMigration",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2021-02-03T11:01:46Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

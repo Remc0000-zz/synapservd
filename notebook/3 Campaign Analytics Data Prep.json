@@ -1,0 +1,114 @@
+{
+	"name": "3 Campaign Analytics Data Prep",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SparkPool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/506e86fc-853c-4557-a6e5-ad72114efd2b/resourceGroups/CDP-VISION-DEMO-RG/providers/Microsoft.Synapse/workspaces/synretailcdpprod/bigDataPools/SparkPool01",
+				"name": "SparkPool01",
+				"type": "Spark",
+				"endpoint": "https://synretailcdpprod.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "2.4",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28
+			}
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Fetch Marketing Campaigns data into DataFrame and Calculate Revenue Variance\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"data_path = spark.read.load('abfss://marketingdb-staging@datalakeretailcdpprod.dfs.core.windows.net/CampaignAnalytics.csv', format='csv'\n",
+					", header=True \n",
+					")\n",
+					"data_path.show(10)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Data Transformation - Calculate Revenue Variance\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"from pyspark.sql.functions import *\n",
+					"from pyspark.sql.types import *\n",
+					"\n",
+					"import numpy as np\n",
+					"\n",
+					"pd_df = data_path.select(\"*\").toPandas()\n",
+					"pd_df['Revenue']= pd_df['Revenue'].replace('[\\$,]', '', regex=True).astype(float)\n",
+					"pd_df['Revenue_Target']= pd_df['Revenue_Target'].replace('[\\$,]', '', regex=True).astype(float)\n",
+					"\n",
+					"#Create new column\n",
+					"pd_df['Revenue_Variance'] = pd_df['Revenue_Target'] - pd_df['Revenue']\n",
+					"\n",
+					"display(pd_df[1:5])"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Move data to Azure Data Lake Gen2\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"df = spark.createDataFrame(pd_df)\n",
+					"df.show(5)\n",
+					"\n",
+					"(df\n",
+					" .coalesce(1)\n",
+					" .write\n",
+					" .mode(\"overwrite\")\n",
+					" .option(\"header\", \"true\")\n",
+					" .format(\"com.databricks.spark.csv\")\n",
+					" .save('abfss://processed-campaigndata@datalakeretailcdpprod.dfs.core.windows.net/campaigndata'))"
+				],
+				"execution_count": null
+			}
+		]
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"name": "SourceDataset_ver",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Netezza1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "NetezzaTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "ADMIN",
+			"table": "TEST"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

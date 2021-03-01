@@ -1,0 +1,105 @@
+{
+	"name": "Retail Cosmos Pipeline Notebook",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SparkPool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/506e86fc-853c-4557-a6e5-ad72114efd2b/resourceGroups/CDP-VISION-DEMO-RG/providers/Microsoft.Synapse/workspaces/synretailcdpprod/bigDataPools/SparkPool01",
+				"name": "SparkPool01",
+				"type": "Spark",
+				"endpoint": "https://synretailcdpprod.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "2.4",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28
+			}
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"_rid"
+							],
+							"values": [
+								"_ts"
+							],
+							"yLabel": "_ts",
+							"xLabel": "_rid",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{\"_ts\":{\"VW4GAJaqcoIaW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIbW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIcW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIdW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIeW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIfW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIgW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIhW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIiW30AAAAAAA==\":1589952490,\"VW4GAJaqcoIjW30AAAAAAA==\":1589952490}}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"# Read from Cosmos DB analytical store into a Spark DataFrame and display 10 rows from the DataFrame\n",
+					"# To select a preferred list of regions in a multi-region Cosmos DB account, add .option(\"spark.cosmos.preferredRegions\", \"<Region1>,<Region2>\")\n",
+					"from pyspark.sql.functions import explode\n",
+					"df = spark.read\\\n",
+					"    .format(\"cosmos.olap\")\\\n",
+					"    .option(\"spark.synapse.linkedService\", \"CosmosDbRetailSalesDemo\")\\\n",
+					"    .option(\"spark.cosmos.container\", \"retail_pos_data\")\\\n",
+					"    .load()\n",
+					"\n",
+					"df.createOrReplaceTempView(\"max_date\")\n",
+					"date_df = spark.sql(\"SELECT max(TransactionDate) as TransactionDate from max_date \")\n",
+					"recent_date = date_df.collect()[0][0]\n",
+					"recent_date\n",
+					"query =f\"SELECT Id, CustomerId, PaymentType, City, Latitude, Longitude, CardNumber, TransactionDate,Hour, Minute, TotalAmount, OrderItems from date_data where TransactionDate ='{recent_date}'\"\n",
+					"#print(query)\n",
+					"df.createOrReplaceTempView(\"date_data\")\n",
+					"df2 = spark.sql(query)\n",
+					"df3 = df2.select(df2.Id, df2.CustomerId, df2.PaymentType, df2.City, df2.Latitude, df2.Longitude, df2.CardNumber, df2.Hour, df2.Minute,df2.TransactionDate, df2.TotalAmount, explode(\"OrderItems\").alias(\"OrderItem\")).select(\"Id\",\"CustomerId\",\"Hour\",\"Minute\",\"PaymentType\",\"City\",\"Latitude\",\"Longitude\",\"CardNumber\",\"TransactionDate\",\"TotalAmount\",\"OrderItem.ProductName\",\"OrderItem.Cost\")\n",
+					"\n",
+					"loc = f\"abfss://salesdata@labworkspace123654.dfs.core.windows.net/cosmosdbdata/recentdata/\"\n",
+					"#df = spark.createDataFrame(df2)\n",
+					"#df= sales_data.show(5)\n",
+					"(df3\n",
+					" .coalesce(1)\n",
+					" .write\n",
+					" .mode(\"overwrite\")\n",
+					" .option(\"header\", \"true\")\n",
+					" .format(\"com.databricks.spark.csv\")\n",
+					" .save(loc))"
+				],
+				"attachments": null,
+				"execution_count": 3
+			}
+		]
+	}
+}

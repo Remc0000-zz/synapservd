@@ -1,0 +1,16 @@
+{
+	"name": "8 External Data to Synapse",
+	"properties": {
+		"content": {
+			"query": "--Step 1 Let's create table\nIF OBJECT_ID(N'dbo.Twitter', N'U') IS NOT NULL\nBEGIN\n\tDROP TABLE [dbo].[Twitter]\nEND\nGO\n\nSET ANSI_NULLS ON\nGO\nSET QUOTED_IDENTIFIER ON\nGO\nCREATE TABLE [dbo].[Twitter]\n( \n\t[Time] [nvarchar](4000)  NULL,\n\t[Hashtag] [nvarchar](4000)  NULL,\n\t[Tweet] [nvarchar](4000)  NULL,\n\t[City] [nvarchar](4000)  NULL,\n\t[UserName] [nvarchar](4000)  NULL,\n\t[RetweetCount] [bigint]  NULL,\n\t[FavouriteCount] [bigint]  NULL,\n\t[Sentiment] [nvarchar](4000)  NULL,\n\t[SentimentScore] [bigint]  NULL,\n\t[IsRetweet] [bigint]  NULL,\n\t[HourOfDay] [nvarchar](4000)  NULL,\n\t[Language] [nvarchar](4000)  NULL\n)\nWITH\n(\n\tDISTRIBUTION = ROUND_ROBIN,\n\tCLUSTERED COLUMNSTORE INDEX\n);\nGO\n\n-- Step 2 Copy data from all PARQUET files in to the table\nCOPY INTO [dbo].[Twitter]\n--FROM 'https://labworkspace123654.blob.core.windows.net/twitterdata/twitterdata/0_*.parquet'\nFROM 'https://labworkspace123654.dfs.core.windows.net/twitterdata/twitterdata/*_0-*.parquet'\nWITH (\n    FILE_TYPE='PARQUET'\n\t);\nGO\n\t \n\n-- Step 3 Lets query table \nSELECT TOP 10 * \nFROM  [dbo].[Twitter];\nGO\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"poolName": "SQLPool01",
+				"databaseName": "SQLPool01"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

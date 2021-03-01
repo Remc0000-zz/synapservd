@@ -1,0 +1,536 @@
+{
+	"name": "1 Products Recommendation",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SparkPool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "scala"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/506e86fc-853c-4557-a6e5-ad72114efd2b/resourceGroups/CDP-VISION-DEMO-RG/providers/Microsoft.Synapse/workspaces/synretailcdpprod/bigDataPools/SparkPool01",
+				"name": "SparkPool01",
+				"type": "Spark",
+				"endpoint": "https://synretailcdpprod.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "2.4",
+				"nodeCount": 4,
+				"cores": 4,
+				"memory": 28
+			}
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"source": [
+					"<p style=\"font-size:25px; color:black;\"><u><i><b>Product Recommendations</b></i></u></p>\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Product recommendations is a filtering system that predicts and shows the items that a user would likely purchase based on their purchase history.\n",
+					"</p>\n",
+					"\n",
+					"<p style=\"font-size:15px; color:#318f50;\">\n",
+					"Note:\n",
+					"</p>\n",
+					"<p style=\"font-size:15px; color:#117d30;\">\n",
+					" This notebook is written in Scala, and there is interoperability between Scala and Python code.\n",
+					"</p>\n",
+					"<p style=\"font-size:15px; color:#117d30;\">\n",
+					"    <u> Steps: </u>\n",
+					"</p>\n",
+					"<p style=\"font-size:15px; color:#117d30;\">\n",
+					"1) Data is ingested from Azure Synapse Data Warehouse using PySpark.\n",
+					"</p>\n",
+					"<p style=\"font-size:15px; color:#117d30;\">\n",
+					"2) The model is trained using the PySpark ML-Lib recommendations module.\n",
+					"</p>\n",
+					"<p style=\"font-size:15px; color:#117d30;\">\n",
+					"3) Product recommendations are generated for the user.\n",
+					"</p>"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## *Connecting to Azure Synapse Data Warehouse*\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Connection to Azure Synapse Data Warehouse is initiated and the required data is ingested for processing.\n",
+					"    The warehouse is connected with a single line of code. Just point to actions in a table, click on a new notebook, and then click on \"Load to DataFrame\".  </p>\n",
+					"   <p style=\"font-size:16px; color:#117d30;\"> After providing the necessary details,  the required data is loaded in the form of a Spark dataframe.\n",
+					"One magical line of code converts a dataframe from Scala to Python!\n",
+					"</p>"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"import os\n",
+					"import sys\n",
+					"import pandas as pd \n",
+					"import numpy as np\n",
+					"import re\n",
+					"import pandas as pd\n",
+					"from IPython.display import display\n",
+					"from pyspark.sql.functions import *\n",
+					"from pyspark.sql.types import *\n",
+					"from pyspark.sql.context import *\n",
+					"from pyspark.sql.window import Window\n",
+					"from pyspark.mllib.recommendation import ALS, MatrixFactorizationModel, Rating\n",
+					"from pyspark import SparkContext\n",
+					"\n",
+					"import traceback"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"val df = spark.read.sqlanalytics(\"SQLPool01.dbo.Customer_SalesLatest\") \n",
+					"  df.head(10)\n",
+					"  //Create a Temp view for using the dataframe from Scala to Python\n",
+					"  df.createTempView(\"df\")\n",
+					"  df.registerTempTable(\"Customer_SalesLatest\")"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"col_name"
+							],
+							"values": [
+								"col_name"
+							],
+							"yLabel": "col_name",
+							"xLabel": "col_name",
+							"aggregation": "COUNT",
+							"aggByBackend": false
+						},
+						"aggData": "{\"col_name\":{\"customer_id\":1,\"product_id\":1,\"product_name\":1,\"rating\":1,\"total_quantity\":1}}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"display(spark.sql(\"DESCRIBE extended Customer_SalesLatest\"))"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"product_id"
+							],
+							"values": [
+								"customer_id"
+							],
+							"yLabel": "customer_id",
+							"xLabel": "product_id",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{\"customer_id\":{\"0\":105,\"1\":40,\"2\":180,\"3\":105,\"4\":180,\"6\":171,\"7\":105,\"9\":180,\"12\":177,\"15\":15,\"17\":177,\"18\":180,\"19\":40,\"21\":177,\"23\":90,\"27\":220,\"28\":40}}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": true
+					}
+				},
+				"source": [
+					"%%sql\n",
+					"select * from Customer_SalesLatest"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"print(df)"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"rating"
+							],
+							"values": [
+								"customer_id"
+							],
+							"yLabel": "customer_id",
+							"xLabel": "rating",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{\"customer_id\":{\"5\":2182}}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"display(df)"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"import pyspark \n",
+					"print(print(pyspark.__version__)) "
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"import os\n",
+					"import sys\n",
+					"import pandas as pd \n",
+					"import numpy as np\n",
+					"import re\n",
+					"import pandas as pd\n",
+					"from IPython.display import display\n",
+					"from pyspark.sql.functions import *\n",
+					"from pyspark.sql.types import *\n",
+					"from pyspark.sql.window import Window\n",
+					"from pyspark.mllib.recommendation import ALS, MatrixFactorizationModel, Rating\n",
+					"from pyspark import SparkContext\n",
+					"\n",
+					"import traceback"
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"#Calling the dataframe df created in Scala to Python\n",
+					"df = sqlContext.table(\"df\")\n",
+					"# *********************\n",
+					"\n",
+					"\n",
+					"Customer_data = df.select(\"customer_id\", \"product_id\", \"rating\")\n",
+					"\n",
+					"_toExplore = df.select(\"*\").toPandas()\n",
+					"\n",
+					"unique_users = _toExplore.customer_id.unique()"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"display(_toExplore[['customer_id', 'product_id', 'product_name', 'rating']].sample(n=10))"
+				],
+				"execution_count": 10
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## ***Training the model***\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    \n",
+					"    The machine learning model used is the recommendation module present in\n",
+					"    pyspark.mllib.\n",
+					"</p>\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Using the ALS (alternating least square) method, we can train the model, which takes a list of tuples consisting mainly of \"userID\", \"productID\" and \"rating\".\n",
+					"</p>\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    The parameters passed in training the model are a list of tuples, no. of iterations, and rank.\n",
+					"</p>\n",
+					"<!-- <p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Rank is the no. of features to use while training the model.\n",
+					"</p> -->\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"\n",
+					"def train_model():\n",
+					"  \"\"\"\n",
+					"    Training model for predicting the recommendation on given set of input\n",
+					"  \"\"\"\n",
+					"  try:\n",
+					"    rank = 5\n",
+					"    numIterations = 10\n",
+					"    print(\"Training model.........\")\n",
+					"    \n",
+					"    model = ALS.train(Customer_data, rank, numIterations, seed=30)\n",
+					"    # model.save(sc, PATH)\n",
+					"    return model\n",
+					"  except:\n",
+					"    traceback.print_exc()\n",
+					"    return \"Error while loading model\""
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"trained_model = train_model()"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## *** Loading the model***\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Once the model is trained, it is saved on the required path for loading the weights generated after training the model. \n",
+					"</p>\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Using the loaded model, we can generate product recommendations for customers. \n",
+					"</p>\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"def load_model():\n",
+					"  try:\n",
+					"    saved_model = MatrixFactorizationModel.load(sc, PATH)\n",
+					"    return saved_model\n",
+					"  except:\n",
+					"    return \"Model not loaded\""
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## ***Product Recommender***\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    The \"recommend_products\" method is a main wrapper function which consists of certain other methods to  recommend items to the user\". \n",
+					"</p>\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"def recommend_products(user_id, num):\n",
+					"  \"\"\"\n",
+					"    Function for recommending products to user\n",
+					"    \n",
+					"    Parameters:\n",
+					"      user_id    : int\n",
+					"      no of product to recommend : int \n",
+					"  \"\"\"\n",
+					"  try:\n",
+					"    user_id = int(user_id)\n",
+					"      \n",
+					"    check_user = validate_user(user_id)\n",
+					"    \n",
+					"    if len(check_user) == 0: return \"User does not exist\"\n",
+					"        #       products = top_products()\n",
+					"        #       return products\n",
+					"        \n",
+					"    data = trained_model.recommendProducts(user_id ,num)\n",
+					"    result = map_products(data)\n",
+					"    return result\n",
+					"  except:\n",
+					"    traceback.print_exc()\n",
+					"    return \"Error while recommending product\""
+				],
+				"execution_count": 14
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## ***Validate user***\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    The \"validate_user\" method is used to verify if a particualar user_id exists in the database.\n",
+					"</p>\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"def validate_user(user_id):\n",
+					"  \"\"\"\n",
+					"    Checks if user exist in database\n",
+					"    \n",
+					"    Parameters:\n",
+					"    \n",
+					"      user_id : int\n",
+					"  \"\"\"\n",
+					"  try:\n",
+					"    if user_id is not None:\n",
+					"      user = df.filter(df.customer_id == user_id).collect()\n",
+					"      return user\n",
+					"    else:\n",
+					"      return \"Please pass user_id\"\n",
+					"  except:\n",
+					"    traceback.print_exc()\n",
+					"    return \"Error\""
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## ***Verify products***\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    The \"verify_product\" method is used for checking if a product exists in the database.\n",
+					"</p>"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"def verify_product(product):\n",
+					"  \"\"\"\n",
+					"    Validating if product exist in database\n",
+					"  \"\"\"\n",
+					"  try:\n",
+					"    prod = df.filter(df.product_id == product).collect()\n",
+					"    return prod\n",
+					"  except:\n",
+					"    traceback.print_exc()\n",
+					"    return \"Error\""
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## ***Map products***\n",
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    The \"map_products\" method is used to map a  product id with a product name.\n",
+					"</p>"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"def map_products(data):\n",
+					"  try:\n",
+					"    dataFrame = pd.DataFrame(data)\n",
+					"    dataFrame = dataFrame[['product', 'rating']]\n",
+					"    dataFrame = pd.DataFrame(dataFrame)\n",
+					"    # temp_dict = _toExplore.set_index('product_id').to_dict()['product_name']\n",
+					"    # mapped_prod = dataFrame.replace(temp_dict)\n",
+					"    dataFrame.rename(columns={'product':'Recommended-Products','rating':'Rating'}, inplace=True)\n",
+					"    dataFrame.index.name = None\n",
+					"    return dataFrame.sample(n=5)\n",
+					"  except:\n",
+					"    traceback.print_exc()\n",
+					"    return \"Error\"\n",
+					""
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"new = trained_model.recommendProductsForUsers(5)"
+				],
+				"execution_count": 18
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"data=new.collect()\n",
+					"allproduct=[]\n",
+					"alluser=[]\n",
+					"for  h in data:\n",
+					"    t=str(h)\n",
+					"    res=re.split('[\\W]+', t)\n",
+					"    userid=[]\n",
+					"    product=[]\n",
+					"    for w in range(0,len(res)):\n",
+					"        if res[w]=='user':\n",
+					"            userid.append(res[w+1])\n",
+					"        elif res[w]=='product':\n",
+					"            product.append(res[w+1])\n",
+					"    allproduct.append(product)\n",
+					"    alluser.append(userid[0])\n",
+					"recomm_df1=pd.DataFrame(alluser,columns=['userid'])\n",
+					"recomm_df2=pd.DataFrame(allproduct,columns=['Recommendation1','Recommendation2','Recommendation3','Recommendation4','Recommendation5'])\n",
+					"\n",
+					"FinalData=pd.concat([recomm_df1,recomm_df2],sort=True,axis=1)\n",
+					"# print(FinalData)\n",
+					"FinalData.head(n=25)"
+				],
+				"execution_count": 19
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"<p style=\"font-size:16px; color:#117d30;\">\n",
+					"    Finally, call the main function and pass the two parameters \"user_id\" and \"product_id\" to generate product recommendations.\n",
+					"</p>\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"%%pyspark\n",
+					"output = recommend_products(user_id=20, num=7)\n",
+					"output"
+				],
+				"execution_count": 20
+			}
+		]
+	}
+}

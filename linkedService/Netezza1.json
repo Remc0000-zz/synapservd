@@ -1,0 +1,16 @@
+{
+	"name": "Netezza1",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Netezza",
+		"typeProperties": {
+			"connectionString": "server=192.168.9.2;port=5480;database=foo;uid=admin;securitylevel=preferredUnSecured",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI0NjU5MDY2Zi0wNDA3LTQ0NWUtOTU4ZS1jMzhmYWVkMTg0ZGUiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "IntegrationRuntime1",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

@@ -1,0 +1,94 @@
+{
+	"name": "binyan_customer_sp",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SparkPool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/506e86fc-853c-4557-a6e5-ad72114efd2b/resourceGroups/CDP-VISION-DEMO-RG/providers/Microsoft.Synapse/workspaces/synretailcdpprod/bigDataPools/SparkPool01",
+				"name": "SparkPool01",
+				"type": "Spark",
+				"endpoint": "https://synretailcdpprod.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "2.4",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28
+			}
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 2,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"_c0"
+							],
+							"values": [
+								"_c0"
+							],
+							"yLabel": "_c0",
+							"xLabel": "_c0",
+							"aggregation": "COUNT",
+							"aggByBackend": false
+						},
+						"aggData": "\"{\\\"_c0\\\":{\\\"234e1272b2eb4c0ad4e1845eabe93dc6\\\":1,\\\"302b033158dd5500caa29020dab2c7f8\\\":1,\\\"3ae5a4f134b99655246b353d0dfd911e\\\":1,\\\"59cfe3a225fa5ac69820153a8efbe7ce\\\":1,\\\"95b875caf0bae25b8f3fe0d9855add81\\\":1,\\\"CustomerId\\\":1,\\\"c456d0cc264008f1b68b6375e47c2095\\\":1,\\\"d0a98b23f1ab9b0c4a4c211fd415e8d6\\\":1,\\\"dc7ccc220c1e17d99ba2689a087db89f\\\":1,\\\"fadf37fbc2c884a028ab06a0ded68437\\\":1}}\"",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"%%pyspark\r\n",
+					"data_path = spark.read.load([\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_1.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_10.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_11.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_2.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_3.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_4.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_5.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_6.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_7.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_8.csv',\r\n",
+					"    'abfss://customer-insight@labworkspace123654.dfs.core.windows.net/Customer/Customer_9.csv'\r\n",
+					"    ], format='csv'\r\n",
+					"## If header exists uncomment line below\r\n",
+					"##, header=True\r\n",
+					")\r\n",
+					"display(data_path.limit(10))"
+				],
+				"attachments": null,
+				"execution_count": 4
+			}
+		]
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"name": "DestinationDataset_eub",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "datalakeretailcdpprod",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "tta",
+				"fileSystem": "tempdata"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

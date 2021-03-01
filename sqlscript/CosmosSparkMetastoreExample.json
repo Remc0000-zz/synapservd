@@ -1,0 +1,16 @@
+{
+	"name": "CosmosSparkMetastoreExample",
+	"properties": {
+		"content": {
+			"query": "SELECT TOP (100) [ID]\n,[BookListID]\n,[Title]\n,[Author]\n,[Duration]\n,[Image]\n,p.*\n FROM [default].[dbo].[t1] \n INNER JOIN [cosmosretailsales].[dbo].[Product] AS p\n ON t1.ID = p.productid",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"poolName": "Built-in",
+				"databaseName": "default"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

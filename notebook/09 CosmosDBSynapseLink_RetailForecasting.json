@@ -1,0 +1,580 @@
+{
+	"name": "09 CosmosDBSynapseLink_RetailForecasting",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SparkPool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/506e86fc-853c-4557-a6e5-ad72114efd2b/resourceGroups/CDP-VISION-DEMO-RG/providers/Microsoft.Synapse/workspaces/synretailcdpprod/bigDataPools/SparkPool01",
+				"name": "SparkPool01",
+				"type": "Spark",
+				"endpoint": "https://synretailcdpprod.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "2.4",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28
+			}
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"source": [
+					"# Near real-time sales forecasting leveraging Synapse Link for Azure Cosmos DB\n",
+					"\n",
+					"Microsoft Retail Store has built its new-age supply chain management system on Azure Cosmos DB.\n",
+					"\n",
+					"The supply chain management system tracks retail operations across 1000s of locations across the world and tracks inventory across the 100s of Microsoft product SKUs sold.\n",
+					"\n",
+					"This notebook shows the power of Synapse Link for Cosmos DB to be able to run near real-time analytics over operational data, without ETL and without impact to transactional workloads.\n",
+					"\n",
+					"In particular, the **goal here is to build a sales forecasting model to help store locations customize their inventory planning in real-time based on flucutations in demand.**\n",
+					"\n",
+					"<img src=\"https://dreamdemostorageforgen2.blob.core.windows.net/cosmosdb-demo/Retailmage20200610.jpg\" alt=\"Retail Store\" width=\"75%\"/>\n",
+					"\n",
+					"&nbsp;"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Synapse Link allows you to seamlessly create Spark tables over your  operational data in Azure Cosmos DB\n",
+					"\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [],
+							"values": [],
+							"yLabel": "",
+							"xLabel": "",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": true
+					}
+				},
+				"source": [
+					"%%sql\n",
+					"create database if not exists RetailSales"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [],
+							"values": [],
+							"yLabel": "",
+							"xLabel": "",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": true
+					}
+				},
+				"source": [
+					"%%sql\n",
+					"create table if not exists surfaceSalesDB.RetailSales using cosmos.olap options (\n",
+					"    spark.synapse.linkedService 'CosmosDbRetailSalesDemo',\n",
+					"    spark.cosmos.preferredRegions 'West US 2',\n",
+					"    spark.cosmos.container 'POSTransactions'\n",
+					")"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [],
+							"values": [],
+							"yLabel": "",
+							"xLabel": "",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": true
+					}
+				},
+				"source": [
+					"%%sql\n",
+					"create table if not exists surfaceSalesDB.StoreDemographics using cosmos.olap options (\n",
+					"    spark.synapse.linkedService 'CosmosDbRetailSalesDemo',\n",
+					"    spark.cosmos.preferredRegions 'West US 2',\n",
+					"    spark.cosmos.container 'StoreDemographics'\n",
+					")"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [],
+							"values": [],
+							"yLabel": "",
+							"xLabel": "",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": true
+					}
+				},
+				"source": [
+					"%%sql\n",
+					"create table if not exists surfaceSalesDB.Product using cosmos.olap options (\n",
+					"    spark.synapse.linkedService 'CosmosDbRetailSalesDemo',\n",
+					"    spark.cosmos.preferredRegions 'West US 2',\n",
+					"    spark.cosmos.container 'Product'\n",
+					")"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Leverage power of Spark SQL to join & aggregate operational data across Cosmos DB containers\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"id"
+							],
+							"values": [
+								"storeId"
+							],
+							"yLabel": "storeId",
+							"xLabel": "id",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{\"storeId\":{\"002a5ad0-448f-49b4-9a28-f9ad753caec2\":100,\"01410c27-4b79-48d0-a2b4-bd17c34c19a7\":18,\"0149f784-85b0-483c-807b-0d417c50ba2d\":18,\"014b8ce3-9240-42d5-a17a-b6715e6e390c\":101,\"019df4e8-0046-4e37-b1ae-48a9a7806942\":59,\"020c9d14-fd9f-47c4-b303-ee60c9773f1d\":54,\"022c74c5-4ccb-4e8e-828c-b44e56be12b7\":118,\"023dc045-5ae5-4737-823d-2cf5a4ffbdbc\":71,\"024633df-cfd3-4bc2-8724-a22778e8a4bd\":73,\"02ca935b-b9f1-4436-8411-0eb6ed1dc155\":116,\"03218316-41f2-4be9-8894-046856b74125\":2,\"0361e5b9-9a74-4c51-827f-dc90f5ac22df\":113,\"03fb7c11-5ef2-496e-adde-8d1b27da9711\":8,\"043dc88c-05e8-4933-b0fa-6bce1985c0ac\":115,\"04564fb6-e91a-4bb0-bb39-fcbd0b814c59\":47,\"04948d15-b98d-453f-944d-8f095d9a5f22\":137,\"05326779-d835-4eae-bf33-065cca7ce7de\":102,\"05ee4f9b-c616-4c15-87b6-1204ada286d8\":12,\"06141ac0-981f-4473-a27e-9aa89140c793\":122,\"06290abf-b635-4b1c-9bca-baa5106cfda5\":83,\"064acb54-903b-4fd9-8398-af7a8359f2fc\":112,\"06b4b264-7f97-401a-8be5-1ce64adaa79b\":107,\"072a86c5-b2ee-4bcb-88d4-80d3b618774b\":105,\"07504a67-2149-4e58-bb02-3500515c1e5c\":92,\"078017bb-8e1d-42ea-acd2-16cd869387be\":94,\"07e17038-f6c1-4ec4-acd3-f86370f14cb7\":104,\"07e9c15c-7806-4c75-9f6d-75d2159906c7\":131,\"0882c25e-26c1-4701-8ae8-04c59393a851\":28,\"08c08f72-6342-4fba-84b7-5e238b024a40\":53,\"08c2f364-f61e-43e2-a77b-832286fc4f10\":91,\"08e25677-466b-4c40-b6dc-2c8a47b5551d\":107,\"098fd093-5a5f-41fb-874c-75fc2c4ad75c\":51,\"09f013bf-1af4-41c8-887c-83fb25f66d7a\":100,\"09f26fd9-dd0b-42f4-8935-ef1c7b4f9832\":33,\"0a1afd38-14b5-4860-a478-86a7f7f78167\":47,\"0a1b84a1-68e7-41c2-924b-7647653f0fe6\":70,\"0aaf1576-731b-485a-b1e7-61fc2768041f\":72,\"0ad67a1f-2484-49c0-ac47-004adaf42121\":62,\"0b0f09f9-65f8-40b4-a304-04d3d8170b3c\":74,\"0b5f9456-15b8-4f8a-95cb-afe7b9107460\":95,\"0b843834-380f-48dd-91b5-56b1f620ba34\":97,\"0b86167f-9352-40a1-84b0-a7eb7a18f045\":109,\"0b92db76-6b9a-4a3c-b31d-223f85845676\":74,\"0bc5517a-46ad-469b-b4a0-2149cf642b39\":131,\"0c16762b-61a9-4b9d-a349-593a86db339c\":62,\"0c1b7d94-4c9c-4f91-92e0-d2109f44e2be\":97,\"0c4b83c7-7bd4-4e70-b9ee-6cf4d6aa5b68\":77,\"0c56afbc-5ce6-49ee-9181-74b4ff147861\":67,\"0cab9cf8-fec3-4489-9a25-d062d3ed4f9f\":32,\"0cbfdb94-876d-47c8-9316-a33f21a2bc33\":28,\"0cdf059d-772c-424a-98c3-7f97c32785b5\":116,\"0d54957e-d0c5-4a6a-9fad-e08efa43e3b9\":89,\"0da7a75a-2975-4f30-b5da-ea9b64c447eb\":114,\"0e1876a2-ca89-4b32-ab8c-cdce7ae18555\":40,\"0e433c49-1b5e-4734-bcea-630e23c691d4\":95,\"0eae5062-bb64-4bc2-aed7-198701cd3b2c\":75,\"0f0c8163-6efd-4b89-9d09-39fbb1bef28a\":129,\"0f74b101-05cb-437d-a45d-29c1446f32fa\":130,\"0f987702-1c3b-4d2d-a680-b58e0022351a\":100,\"0fd31124-b9ef-49da-a639-de637e14930c\":32,\"100311de-2302-4418-89a6-bf701c48a5ac\":90,\"10521d03-5661-4b54-92a8-e83058fed7c4\":32,\"109bfb48-0f5e-49ef-97ec-b8251912a72e\":50,\"10d13d6f-b4d8-44d9-b0c8-4fb05f7d83f2\":59,\"10ed9fbe-37bc-485f-bf37-99cc22d223e7\":76,\"1130bc10-7c06-4354-8a31-633a9444c26b\":113,\"115402dd-7e9c-4579-91e3-979ea9dd349d\":64,\"11556602-9f13-4aa4-a7e6-67e4cca349dd\":2,\"1189e92c-216b-4c8d-b720-5d6697aa8835\":110,\"11d0cd96-1c76-4525-a54d-b1cf15ff74ae\":40,\"12f64cf1-4684-41dc-98cf-edb33c5eb998\":94,\"12fda015-3000-4f9b-878a-8222998a276f\":71,\"13138a83-0e31-436a-8e2b-86f94da496f3\":130,\"135303e2-ba06-4280-aa5a-2388185c59b0\":9,\"136c9da7-2d3f-4e96-9080-a74c06bc8afe\":33,\"13b11549-a431-41c1-9d25-8f3c712d249c\":137,\"13cf6136-a636-4915-a9e9-f8154c838939\":123,\"13f10e46-5b67-485f-bc3b-1ec75e0cd0d4\":105,\"13f67b25-12c7-40e6-ad98-7f09c05ac702\":89,\"140cc579-e77a-4697-ad6a-25faba1ce907\":78,\"142ac1c6-bd8d-41d2-92c6-c2a3fdc3dec3\":119,\"143cd2a6-61a0-4362-a291-9dc11f5226c9\":95,\"14421625-b010-464d-8321-4a0d5c76a63e\":100,\"14488bd0-55b3-407e-9b4a-504012537a29\":54,\"1451121f-d44e-4667-92bf-9578f7668048\":130,\"14755631-b48a-4a84-96bf-3b5367642093\":74,\"147fd93e-8f3f-4542-9ccf-75addf077930\":64,\"14911968-5b5e-451f-9109-1b47b4b5e526\":103,\"14cbc1d4-eba9-4e18-b58a-c8668ad1b3b9\":14,\"14cdba93-b476-4d93-84d0-4cde5821d7ca\":71,\"1505ae7f-99d7-4881-a427-dd6c56e6b4b4\":53,\"15121166-2dfe-4375-a3e0-74eb145a5441\":92,\"15727d2f-4cee-45dc-8a3b-d18bab8d821f\":77,\"15a7b881-1439-4481-b31e-986805ceb886\":8,\"15f47fb2-54c5-4b39-b16f-79743dacc4b3\":78,\"168cac88-ae21-457f-a94a-f952bd33b5a3\":129,\"173d87aa-1395-437b-adc0-a05b2f7f2dfd\":98,\"17aab7c7-5d4b-40e8-804c-d971c44220cb\":103,\"17d0841d-9a96-493c-8ea5-1bfbab5dacba\":116,\"17f0cd5b-17a8-4f2a-91bb-eb1835795a2d\":137,\"188a8c71-049f-49a3-ab83-bdc047c36b86\":75,\"189adbcc-b902-400a-8ed8-e8bc1d7dac38\":49,\"18b12b75-f730-40ee-b9ea-536e6a3e8cb6\":105,\"18ea8b5e-3b79-452d-9ae1-dc286b5741f9\":124,\"19215a6c-9a7b-469c-9b2a-ff5dcf3b890d\":128,\"196a1f31-850b-4470-9f9c-30da719a0549\":92,\"19bf6b1f-6c04-4eb9-bf67-5040ca306ca1\":137,\"1a436a83-161f-4f08-9669-cd04f463f224\":59,\"1a616a5b-fcbf-47b6-84db-1e38e4d7e94b\":111,\"1ac42493-790d-4ab4-8ff5-a07c0a1b7ee3\":123,\"1b6cc48c-ff65-41e7-a6fa-392a46d215df\":90,\"1bdf95af-920e-4779-89a2-392c93e50433\":47,\"1bf3304f-6e70-4e60-8855-ac835bb14f03\":32,\"1c0dbaf9-0281-40c0-9419-5a117a85a9f5\":52,\"1c5d0203-6bf5-4bfe-a53a-07c3e620dea9\":50,\"1c6dddd2-db86-4164-9239-7dc41dc07aed\":126,\"1c814c12-8011-4fd0-adc1-cc8b2906867e\":94,\"1cf31a35-91bb-49cd-b331-d0f13f2f9310\":103,\"1cfc3ea1-1ab4-4ed0-9177-c23dda6dec85\":97,\"1d06f6df-3970-486b-be89-51f61c956ee3\":86,\"1dd22169-5635-4049-9ccb-8b180133150d\":74,\"1e0e0816-bb44-41f4-83c3-118ad0c50f99\":18,\"1e119858-11de-4b63-8359-4e63ab248650\":28,\"1e7e98ee-7e53-4982-98ca-33e8b700e670\":95,\"1ee4c84d-369c-4bbb-aa4c-67e5c73c0d24\":106,\"1ef9e8dc-83c5-4bc5-afee-e17fa9930ad8\":21,\"1f2052b4-660a-4f29-abf6-5353864a2ca0\":137,\"1f6984a9-3594-48a6-9ed7-2927112433af\":113,\"1fc27aae-3d65-4c82-8eb6-f34a8d9610a6\":84,\"2001db60-26c0-4e65-86a6-6cd8410893f1\":5,\"20396906-8529-4bce-98c6-0e68a48ca9b9\":112,\"205c7459-8adf-43a6-8d35-efb652a6ca8c\":77,\"207e91f5-f9e3-4d0e-948e-7f8978e3b5fd\":40,\"207fa1e4-6769-46fc-bc75-6f012b09269f\":114,\"208fc1e9-8a6e-424a-a5ce-a63570e7d2e9\":129,\"20eac62e-9571-4dfc-babd-dca467f2f0bd\":116,\"21111976-d5de-45f9-bde5-1c8aa765c0a6\":9,\"21286e81-9dda-4dbe-9eab-caedafc959d9\":47,\"226d8029-289c-4ff3-83b7-a066afa44bfa\":118,\"22ef269e-9a04-4e10-ac5c-b671061f447e\":75,\"22f71518-8e1d-4796-b5b4-668704960955\":76,\"2356c1b0-3e89-4c43-969d-0604a4fa226a\":72,\"236ad565-1c23-49f9-9d78-0c20b8c8d640\":83,\"23f512f4-7052-4f27-918f-7e5cff51676c\":88,\"249a2192-5377-493a-8295-1e678217360d\":98,\"24b92f09-346e-43e3-a301-5f4fbb06f9bb\":103,\"24ce2b4f-13e3-44ab-81db-1aad033112ca\":28,\"24e747b3-b4b9-4958-bf2f-4f826d7c14d0\":95,\"250fc9a4-1452-489b-bed0-cc68b7fad26e\":115,\"2535930d-2f53-4cc9-b455-8d14f5ba0b05\":103,\"264e0209-2590-4d8e-977e-486c77de5883\":89,\"26750b78-9aa9-4574-a412-a84f89405850\":98,\"277560ea-1ac0-42df-a102-a931224ec580\":123,\"280e9ff2-5ecd-41f8-89cd-13e771ccb1bb\":98,\"2826cf89-67e0-4fb4-916f-6b6f171e7bf3\":75,\"286369e7-6f74-4764-8a6f-19e9df595157\":118,\"28a4f5ef-08bc-4c2c-863c-0752b62c71e1\":73,\"28cae47d-8e30-4dcd-84ba-ccdc0e74d65e\":71,\"2909f93a-9955-45df-ab87-0c3e1f278ca1\":45,\"2946ab3e-3670-4f54-8ced-8bc80ac9a390\":9,\"29736905-cd58-4b5a-bf6a-823b4da864c7\":74,\"299b192c-6fd5-4e5b-a6ca-40f16e4d3ae0\":123,\"29bcbc7f-2fc7-44af-ada2-c28d2f25cc12\":33,\"29be80bd-216a-48a0-8602-a8e778333e8e\":111,\"2a3bf65d-9fe9-4ad6-8edd-0c63022464bb\":83,\"2aa64e47-403b-4338-b853-14b9dedf23ec\":8,\"2acff6c4-f413-4499-9c06-9fd4a1f4313b\":101,\"2aff286e-602b-4d83-a3d1-c61e6a5e62b7\":113,\"2b26fa5e-b635-4f80-882b-daf6e35b4288\":2,\"2b9225fe-be7e-4fb0-88e3-cd0def1ca3b9\":78,\"2bc9a3b2-288b-4759-b616-8fb2167adb17\":117,\"2cd8c408-c091-4a18-8aec-eaa183f2792a\":12,\"2d055db9-f64a-4b15-b7c0-b1661125e12c\":105,\"2d24bd60-0ee5-4061-b9bb-57264350bd07\":111,\"2d8ba134-43e8-43f2-80fe-744dbd720a33\":45,\"2d952ed1-d5bb-4637-b95f-32e60e90d4c9\":68,\"2da69229-31b0-4186-b8a0-457cc017a85a\":86,\"2dbf540e-65af-4a3d-8a9f-1e74f0f8fad1\":8,\"2ddcf321-47c2-4ad2-8dd9-46fa23f8e756\":72,\"2df76ae0-b271-4e44-aafe-e16f730f4dc8\":74,\"2eac7db9-65cc-4141-b53c-56c731fcdef6\":131,\"2ec3f764-230e-4b1a-b14b-77c4d06bf9e6\":49,\"2eda2e97-502b-4e18-ac01-34507bfcab0e\":95,\"2f113759-c144-40ab-9584-5b84f58d41a1\":121,\"2f143887-bbb0-4104-8e55-eb87bd5f4b1b\":106,\"2f41cd7f-ed9e-4172-bab4-f3618a51f378\":84,\"2f85c295-42f3-44e2-b7b0-119df4c62d4c\":103,\"2fd43ee0-9f00-40e5-94ff-77a528fcc4ae\":90,\"2fe661a2-cb5f-4118-a2d5-7a1480b4266f\":74,\"3048f7cd-f5fe-4ec8-a30e-a627b4cca108\":124,\"30a5a4c3-c83b-4034-a72c-482b8c19892a\":70,\"30b65b5a-f8e7-4a17-a473-2f1175f80d1d\":129,\"30bbe554-835d-42b2-8e91-5364e14eefe8\":119,\"310a09f5-a3d7-4e9f-8d04-28fd70b16dcb\":71,\"310c89f1-0cd4-4159-a03f-ecd879b4bdc0\":107,\"31138a6c-2e1e-41fb-90d4-1547b1eca779\":9,\"31514ace-f6d8-42c8-bc55-6eef9ba3803e\":5,\"316c0f0c-6afc-4ef2-ac89-e3062425ab20\":14,\"31afe84c-9763-4648-80f6-644ca4e004e7\":9,\"31e3902a-0edf-4324-9a84-4feaeb23fd51\":50,\"33115168-a5b2-4e22-a8c0-37ca7a3a4fe2\":123,\"3320573b-165e-4eb1-95ae-7d523bc651e6\":126,\"333819bb-6570-4ddd-941f-cdf3e405ee6f\":89,\"333d6f53-3b40-453c-a699-6c02a919d357\":115,\"33f07e84-aec5-4ba0-95e0-3a61a6103639\":9,\"34260aa8-c041-400b-9724-c023092ff262\":53,\"346e7002-ea77-488e-838d-721d98bdc87a\":115,\"34cdff01-5b19-4a43-87ce-c50d6414c4ea\":104,\"35533599-5be5-4ed0-9a9f-b9ffe612dde7\":129,\"35603c55-9d94-4ee5-8cf5-aef61739dca4\":124,\"35e69b83-254e-4be5-ae73-571c54de6bcc\":56,\"35fc60fa-e587-4388-ae92-96afdde6c941\":81,\"36548793-57d0-4b11-9933-e8936698501f\":62,\"36721168-16e5-49ee-a499-631a89a905c7\":18,\"368d12a0-401f-4125-93f2-37697f5ce2d5\":137,\"37587c62-f677-453e-a4d4-80f506de3130\":126,\"3772b08e-acca-4e3e-b16b-5fe49d0e368f\":71,\"38054efe-0527-4b3c-b574-530ab8debafb\":94,\"380df501-3bf3-4a2f-a036-7f5b1563dbf9\":95,\"3843d773-372d-4d71-a77a-a79c7848125e\":93,\"38744c28-08b4-4817-885f-586296d570d4\":123,\"38923b04-346f-4343-ad5b-35708bbc33bd\":12,\"38df125a-056f-45dc-b3f8-efcb11be0527\":101,\"391bb0ee-7816-414b-93d1-7fc5437ccb5a\":118,\"399c3420-6749-454f-be17-780676688647\":130,\"39ca8e09-4d4c-47c2-a863-ba0363311798\":32,\"39ce484c-8bbc-49cb-b09c-4d81d347e441\":112,\"3a23bea8-00aa-456d-88bd-c8f10fba999a\":91,\"3a3b3d0d-40ec-4418-827c-0965c638abff\":48,\"3aed32fe-6982-4c1f-96db-a7183b298a5a\":9,\"3b048dbd-73d5-4bfb-b3fa-89daf387d347\":117,\"3b2f8b80-aa9c-4945-89fe-e810e21f9c8b\":119,\"3b3e0b39-9017-4ca1-8210-74d47f7fb407\":81,\"3ba570c1-8d70-478e-ad0f-07e09c21149c\":52,\"3be9369f-14ab-4294-982a-c582e299e574\":106,\"3bf206e5-bac7-4b7a-9dd9-d3b8ac6f5679\":80,\"3bf9c6f8-4183-4336-8fc0-e753ac975341\":75,\"3c92c4c9-ba75-4449-9d5c-a3403066790c\":83,\"3cd50ef5-654a-43c7-897b-f42a109fec6e\":103,\"3cda062c-2f9e-4a66-bc04-7a8c370ee6c2\":12,\"3cedf45b-a6f0-455d-ae88-9f096e9469cd\":118,\"3d20b5fd-784f-4b6e-8f0e-ecdb5951c2fc\":33,\"3de91740-eb2b-44d0-b878-97095f1e54e3\":95,\"3eaf2cca-a66c-4df0-bd4b-3065995b0e45\":14,\"3eb64eb6-06eb-45a8-8726-969de7a50d9b\":128,\"3ec5b9f9-13eb-4ba3-ac71-0614151aed7b\":14,\"3edea0d9-8c17-47ff-b9a1-8344b8060666\":117,\"3eeea708-b49d-4804-9b5a-64a0e9ea1962\":56,\"3f6860b6-11bc-4e21-b968-271764855cd7\":111,\"3ff2f3e1-c902-4dc3-a4e9-778c56136c38\":32,\"3ff909f9-eae0-4626-9efb-0cab8cde8b19\":110,\"40395fb0-e884-4014-85f7-9e537a5ba066\":8,\"4087b3b2-e3b8-4471-9eeb-4e60448ad407\":80,\"40a45cd0-f9a7-478d-89a8-95eed0c046df\":62,\"415eeba2-4ec2-4a35-a9a1-4cd443f73349\":49,\"417e8c79-8fc5-4d62-926e-804d4835ebc7\":97,\"42265f1d-86a9-4e9d-b849-7b4f8c91b894\":100,\"424c9532-7ab0-43d0-bb9b-a542aead48dc\":115,\"42547024-ad6c-4857-9f30-1dfbdbe355e9\":101,\"42a31025-5a19-4494-92bf-a4ab60bf54a2\":86,\"42cf0e60-4670-4cc9-9e66-fead818c1745\":121,\"430b1a0e-b0c8-4771-a393-e1348c712103\":103,\"431d5559-3416-4e79-a2fa-1b9ae604711e\":122,\"432125b5-3ba7-40db-8bc5-2d2ca1c6a1b3\":81,\"4398a053-8917-4700-b589-1681393da351\":48,\"440e9db1-c19a-45bc-9d68-fac9c80d8f83\":121,\"446470cc-8ef6-4cff-881e-aa20a6e66fae\":49,\"44eb2692-f861-403b-8419-390460955bc9\":12,\"452887f1-0d53-4a40-944e-8df1e57f4e5e\":130,\"453e9c4a-5b44-4904-a138-94d347816094\":5,\"4546c053-3c62-497e-8891-785b96defbe8\":106,\"45eefde0-023b-4110-8391-13bc33edda2c\":40,\"4680b53c-910b-47bb-8d7b-7f90e694dff6\":77,\"46c0a47c-d767-4f35-b4e8-40a1b620a63b\":115,\"46ce46dd-9c01-4e79-8a6f-719eabb1a2c1\":72,\"46fe260f-65f5-4a43-8d93-c265201deb38\":83,\"470c4d81-f4c0-4f8d-94af-afb798a93032\":47,\"4735c8a9-b3bc-4e52-8785-72443090538e\":18,\"478bf2f2-2f68-4c32-a115-6baa51242805\":14,\"47ce06cf-141f-4f9e-a5c8-464da1df9b8d\":12,\"483d1700-05d9-4335-bc66-1d40c9716812\":83,\"484bfc9a-ad55-4ad4-a3d8-126ff77f5c0f\":91,\"487ac3a4-745e-4bba-a901-5ea7aaddd59a\":129,\"48882d6d-b04f-454c-913a-97ac334f239d\":64,\"494e4af2-1a19-423f-981e-62510b5eaff8\":111,\"497409e7-5048-4540-b947-8e6879b99eb8\":102,\"49d710b3-93e9-4149-b6cf-93196e30dda6\":113,\"4aaf535f-916a-44c2-a067-0fb905f88824\":98,\"4aff39b8-664c-4669-8dd3-418412333316\":12,\"4baa99ff-8dec-4657-8f1f-5f825a7dc965\":121,\"4c596a63-2140-4088-a785-9f89d6f449ad\":97,\"4c5a9777-eb4f-498b-a943-a54639a23037\":84,\"4c5c640f-008e-41eb-91ba-add4a07a370b\":115,\"4c919611-35fb-4df8-af2b-8f3c8e2a1673\":72,\"4cba617c-c4a9-45a4-a5f3-8a7c941eb5c0\":77,\"4d6559f5-df8e-481c-aea1-ab59991ced74\":91,\"4d78199a-53a6-4dcd-84d4-3653fa4e59a2\":80,\"4ea47f49-cad1-4d1d-8d39-6bdf623546f5\":47,\"4ead5b39-fdec-4db0-a939-d9174895585f\":49,\"4eb15202-c8b0-406f-a00a-b82c0683eff3\":84,\"4f256ea3-be74-4eff-bec0-0f92585f86e0\":62,\"4f6ab74f-4a98-4f86-9133-559a6a9d5865\":71,\"50c29e2e-b55e-452c-b82b-02325a5cc902\":126,\"50fb3948-da2f-492d-9937-c322f9149ae5\":77,\"510cef18-535c-4304-b4e3-551f57953109\":131,\"514c5912-dc56-440a-b507-358e4c53e527\":48,\"522bda23-4f3a-43e0-923e-645ce373b479\":53,\"52600a0d-2f4c-4033-96be-e0c8f6a7ddd2\":114,\"52757f6f-9125-4387-9759-6f30fc127980\":90,\"52ae89ff-abca-448b-b5fd-4da0d2901d12\":54,\"52b471f6-9ac3-40d9-9e87-e461f22d72b7\":45,\"52f8cf88-b7eb-4535-9944-d902cc90bba2\":51,\"533c0d21-ca39-40a9-8bfd-1f8c9142e46d\":94,\"536a500b-b701-46ec-981e-0d760d14dc6c\":107,\"53952617-6beb-49e4-b277-f1b66df06b62\":67,\"539f12cf-532d-4dce-80ea-08e509b9f981\":32,\"5409feb0-c1a4-4655-b2d5-e27a2da08b6c\":2,\"540a9bd4-c517-49a5-a29f-334c5d045f4b\":101,\"542a4efb-1932-447d-a4dc-82addb861e6f\":81,\"54bb5be4-a4a4-4c34-9a0e-bfc8529f5789\":121,\"550b72c3-e6f1-409e-b932-8adc556c8c68\":117,\"55283759-a803-4437-8fd6-9c43fbe3f064\":5,\"553ac04d-e2d7-4538-ad13-2a486c71cb3e\":109,\"557dfe64-9c0a-4765-9d95-679a78a7dc1d\":110,\"558cbfb8-c1b4-475b-b1f3-b3a6f7a2c473\":40,\"55aade42-34e1-498b-acb5-30ea0a012e46\":12,\"55ac05cd-476e-4d1a-88b7-7c22262f044b\":51,\"55dbbd92-6747-4600-87af-24c8d54b4596\":81,\"560317f1-58d5-4dd3-b0df-2550c1d1433c\":8,\"5613efd1-acaf-4a6c-983f-879ceac4ece2\":103,\"56e30d7c-3a2d-43f5-bc2e-4ae4dea1468e\":106,\"573fc04b-094c-405a-b49b-d5af86c68cdc\":21,\"575ed8ca-647f-4cea-a857-b378b49757b5\":100,\"5770abb5-2d0f-4fd3-a999-927ea2b17e02\":101,\"57bbd4df-a68b-4a9b-a18b-7509bfaa2b53\":123,\"57de304c-5c35-4e27-9385-3c45bd3bca2c\":5,\"5810a1a7-5982-4b5b-b90d-839fdbe2bc8c\":84,\"588731a7-8141-4bf0-a595-005242ca3d83\":109,\"59b78263-b4ee-453c-b0b1-6b6588c379ce\":9,\"59df0aa0-c13c-4224-95e4-1e97e1d55eed\":78,\"5a9c0a41-16e9-4c4e-a6a9-ed7cd32a1ef0\":110,\"5acdbb09-9ab6-41ba-8b9c-49334c0d39cd\":44,\"5ad42cbf-da9d-4958-9b1c-8e0db35eda2e\":110,\"5aff1209-00f5-43b2-9f8d-33fe2394ecf6\":131,\"5b51883f-aedc-4ea7-98c8-d6f907ec64c1\":80,\"5bc97144-5fa7-4be3-966d-a46567fa9ae9\":86,\"5bd1aa43-3aa7-442f-a97a-a15dfb11b58d\":67,\"5c2a3fb8-ef9a-487e-8218-c2d05df15415\":28,\"5c40a8cc-0193-450f-bea4-5dfb07f2ae71\":59,\"5cc23f01-5bf6-4922-9c8b-6f616379ee87\":104,\"5d3f3110-6cb2-4e15-aa91-4ca80790e7af\":126,\"5d4c594f-8863-4a69-bd3c-f6afa1b8a544\":67,\"5da49ba6-726b-48f8-bf74-b27437a1c94e\":130,\"5dba669c-2d98-434d-b09f-51233fcc5dd3\":28,\"5de13f8e-a68e-4d4e-84a8-56fa8a5d0dab\":105,\"5de7059f-9620-446b-b0eb-0736ea75f3d7\":32,\"5e20ed7d-3a91-4754-ba05-484021283839\":128,\"5e92270c-cabb-4d45-971a-649d5bd946dc\":44,\"5ed06c75-688e-42d3-94f5-798c27a34f8c\":72,\"5efd314c-83cf-442b-a68d-f70585968771\":9,\"5f7da9c1-a859-44aa-81b3-d0ba022ed12e\":53,\"5f80f88c-9ffd-4db6-84de-8e5b3f0aeecf\":77,\"5f97b4b1-a739-4dc1-8ca4-058f4fdcf633\":91,\"5fb3b472-b0fc-4c4c-beed-1bb872209554\":113,\"604e4b06-04e9-4648-8bff-62e46278eeb7\":8,\"608cf752-4e08-4f75-99ec-8bc25306e306\":74,\"60ecb4e0-5657-4673-976f-f65d3f8fdc2a\":107,\"61097066-5322-492b-810c-32b3317db98a\":94,\"61717d78-de67-451e-a87a-a7b2c073e253\":78,\"61ace3e8-de5e-4cee-a861-9e2de224cd78\":121,\"6217c000-987d-422f-abeb-d93f83671370\":51,\"62dd7bef-4447-4e79-ae3f-01438280372b\":45,\"631251bd-5e34-46f2-acd4-a9d8b695d682\":73,\"633162dc-3283-4769-952a-b79e536714ef\":67,\"6335e6c5-cb90-49b9-b4f7-f6f767a3ce3e\":64,\"6440e6cd-a806-4255-9869-c88dcc9a3976\":86,\"649ee182-9102-4c42-a41d-5214ca2a54f1\":89,\"64c46260-c233-47d6-8735-7e88e2620ac6\":52,\"6509e0d4-b828-4739-9ff3-1980620eeb75\":12,\"6526686d-82bd-47b9-9712-abad2a728cfb\":70,\"653ca01e-b61a-474a-8f44-5ae64f6d5343\":132,\"65d4cf5d-2bf4-438f-a2fb-3112ca1bcb14\":8,\"668a970f-9c81-40f4-a24d-0f999f55251e\":86,\"669ed2f7-b283-4c5f-828b-e9253afcfcd8\":131,\"66f7a61e-28bd-4861-973a-06e260f75f64\":109,\"67007f1f-a6c4-42e7-8fda-f2e3093495c5\":132,\"677a1ca7-13a4-4f9f-a288-3d8e93f0e4b5\":122,\"67985f09-ac02-43b8-b1a8-aaffa44f7aa3\":93,\"6802bcf7-078b-4ec5-897b-fd0eb9c27192\":132,\"68648da5-3651-4570-a159-f2537a74df71\":75,\"68a6c427-7f5f-48b6-bdbb-d447ba65b2a7\":88,\"68e03ffb-d1b8-40c7-a612-46d1fd17b751\":115,\"68e19751-271e-4204-8b78-f9f3025cb3c3\":97,\"690f755b-7aba-428c-8b68-ea88bb471fa8\":128,\"69134e24-ca81-4536-9feb-2b4da82b2271\":5,\"69979401-ccb0-4348-a1b6-ffa22537f023\":134,\"699e99c2-4062-446e-a74b-27e4bdc650d1\":74,\"69e3610a-3054-4958-8ee2-1bfe31a8168f\":64,\"6a11c98d-ed7b-4938-b4da-0bacf9e075b1\":130,\"6a46b90f-1056-456e-90c0-c1555c53ab03\":56,\"6a8c434d-bc89-48ad-a45f-ca693f176059\":91,\"6acc6044-8545-4c70-8cbf-a7f236a6daa5\":102,\"6ae77e08-30bd-44d2-9a9d-b3c3285e7c40\":102,\"6b594a83-9609-4965-9cd1-3130ae7051f1\":81,\"6b63d521-2180-4d81-8406-763d8a4e8845\":89,\"6bb82f04-87b6-4585-b5b9-dfe6659980ff\":116,\"6bc27641-ee1b-4359-bd33-115c117e4358\":107,\"6c46c7a3-9f0c-4193-bdc2-aff9ad42834f\":114,\"6c4821b3-b999-49dc-a748-bfeee94f4fbe\":86,\"6c6e07b4-ca26-4313-acd2-062ff2560c76\":49,\"6c86f5d7-195a-464e-b300-4d1987d44a84\":101,\"6df6c0c9-d528-48da-be54-7f9ab6f6a331\":45,\"6e4aed01-40e8-4d3a-bbc9-a350e63f8cfb\":131,\"6e844305-833f-4e30-a41d-bf745ebc67ac\":111,\"6ecd2908-18cb-4dc5-be1b-adf8e86baadd\":104,\"6ef5e924-afa1-4899-9710-c0148c6eb840\":93,\"6f266e5b-8003-4c40-88d4-b112e322e811\":28,\"6f77a0d7-2517-4c3e-bd76-6dc01e1a31ba\":53,\"6fa5693b-cbfc-4c26-9185-f97c1f675d57\":101,\"6fa7d8d2-3cd1-40ed-ba96-f67a6695453a\":18,\"6fdd36d3-de39-4a7c-a833-a6c72e19016a\":59,\"70698300-636c-4df6-9c62-4d334fc0778a\":88,\"7097835b-cda2-487d-b1be-f7b0f94ac2e3\":50,\"709e0ea9-110c-4d54-a2b0-8c7302223bb8\":111,\"70ab8bb8-55ca-415a-be5f-98637b41e44c\":116,\"70d1bcd0-c4bd-4faa-8a85-25451426d55f\":132,\"70e756b0-8ecb-407b-8db6-943a2e15600e\":21,\"70eae4c5-683a-4880-a39c-5a355a707676\":80,\"71135dc3-9a99-44f4-a489-a1b265434eeb\":73,\"720aa0ce-90ff-4f4b-82e8-715a4fb78612\":81,\"728d906e-9082-40c0-8657-7e4ec7e1de04\":137,\"729173fb-92fa-451d-9e66-6fe39d161ac1\":59,\"72bea50d-d0a7-4b91-bd85-3416d0e5fe8c\":80,\"73808ed0-6104-4bab-b12a-fcf2083109b5\":107,\"73c09560-4ae0-448b-9a6d-c74b888e7a3c\":132,\"73e79c38-a78c-4360-b3de-9138a4d7c9f6\":89,\"73f40309-a40d-4c65-9927-b9c6299bf18c\":137,\"7436d25e-170e-4338-b708-8e451d8d31ac\":68,\"7436f98c-9e00-47c1-baba-7ea844a06c40\":47,\"743d28c8-6ba5-4eaa-bc8d-0369c8adbcd0\":88,\"7448143f-157f-4202-9c31-4c5b1258f4ec\":92,\"745b446c-6c3a-4389-bc00-58d270d306a3\":62,\"746cdeeb-f148-4d62-a1b6-c09866415b5d\":134,\"747c9129-ea47-48f8-89c0-40ccee95357a\":50,\"74944299-6c74-4e77-b9a1-4b6086a2b46e\":107,\"74c29a6f-a9f0-46d1-aa8f-bb167b256c81\":119,\"751fa234-bbd8-4800-b604-4cd128fbccd8\":89,\"7539fe95-34ab-4cd2-bbb2-78eaa70dec1d\":5,\"7594ffba-b1ce-44eb-87a5-2649a74c2a38\":123,\"759b6189-1e2b-440f-9dd2-6d3354b53467\":62,\"75b5b0f2-233b-4038-8764-16d7d2a5161d\":88,\"75c9413e-1bd9-491d-933f-53f826d8f0e7\":88,\"75f0ca2e-7829-4e85-960e-20dd6eb4fe13\":56,\"76314af7-5315-4ab6-bbda-8bdbcf17e786\":95,\"76aa7d88-8d39-4058-9543-933b25893ef5\":83,\"76f2800e-ba0f-40e3-889d-42f9efc07b3d\":122,\"780acddd-7602-41ec-8f4f-97010ce5b4fd\":123,\"782c8458-2b50-48e9-bafd-aa917c9f9f7a\":113,\"78606285-4dd7-4354-b087-bd614f0bc3d2\":5,\"78a148fb-b6a6-4a2a-ba7c-2003b120b5f0\":76,\"7911904a-fec8-4135-9547-76489c9caac2\":50,\"796ed8b9-ad9c-4c32-ab64-b054c87c6afe\":47,\"79b92c81-bbb6-4f48-8c02-172a58ded1bb\":21,\"79fc720a-d7fa-4970-9d61-432a90d340f0\":98,\"7a744070-e6fc-43fd-9d82-0c044a2a12a5\":98,\"7aa4ace4-2213-4e40-a572-c0733620f0c6\":45,\"7ac08e91-b86a-4e8e-a4ee-a8f75f4734c6\":86,\"7b1d27e8-cb02-44f8-bcaa-8688708b9b76\":12,\"7b478b1a-20e0-4fd8-9ba0-6f08d56d6d93\":105,\"7b73f6be-7df7-430f-b007-ba376131d740\":88,\"7bce9e75-60e2-4e8d-b471-8e731f6d84e3\":21,\"7ceabb6f-b64b-442f-9527-6c2be1c3c73f\":134,\"7d2ff0a3-24e9-44b7-911d-fd63243e78dc\":90,\"7d34905b-48a7-45d9-b919-4f4d6bec45f0\":94,\"7d5ded66-57c3-444f-9974-9146c18dcf06\":44,\"7d85aadd-a118-4020-b365-d34dab09d893\":51,\"7dd2e1e8-1b29-41b9-98cf-c749fd5f2251\":113,\"7de33c6b-4a25-45c2-82ae-21f92b0ed7be\":52,\"7df2d077-e107-417a-b4a8-f75c632aaac4\":118,\"7ec38b04-ed87-4372-9390-a867374fc4e3\":59,\"7f3c8160-ccd1-414d-9256-77b09c53103d\":78,\"7fa2ee75-f950-42a9-836d-ad95b14365b8\":75,\"7fd2654c-bf8d-4861-8c1a-19d7e882b6e8\":33,\"8013440b-9900-46a0-81fa-354372aff792\":110,\"804ce8f2-7364-4197-97d2-685b9d41f7ab\":114,\"805352a1-5c75-4325-8db4-2a5518d3d3c7\":109,\"80b19459-419b-4261-9f95-607dd865b683\":53,\"80d08f67-3090-4009-9b01-e244a6ba062d\":40,\"81539f56-8f28-4091-8589-bd3c20f04cdc\":28,\"81eb2e79-3cd6-4c97-8acc-27837a57e9e6\":71,\"82869c78-1f9d-48c7-86c8-d1df39773ab9\":67,\"82bf22a2-d2df-4e5e-a15a-98f3b595a505\":117,\"82f60ab4-8398-4eb7-8cc5-dd632d141010\":64,\"83027e03-e40b-4ecd-b84e-cecdb4cbe15a\":51,\"830498ba-6e68-4088-b366-c2753c03ad31\":81,\"832b221e-9f99-47f8-9e28-f8a60b03f5d6\":113,\"8351495a-1523-430c-8657-1872ee94eda9\":111,\"8389f837-6660-4764-a80e-f3818120609d\":51,\"83fc5fe9-eb14-4174-9474-a6d42a8de5c9\":48,\"84746c61-ae20-433d-9944-36f6c0e01fdb\":116,\"84a5aa0c-b5b0-49c9-b871-09c7585e25ce\":40,\"84b71140-0fa3-4217-a60e-590b2790df10\":9,\"85244d63-3891-4769-96d9-a62808dc1b11\":109,\"856ba4d3-0603-48db-a9f2-e1c4cc56bfb0\":90,\"864cd0e7-8fb3-4d3a-b559-1ba9916b58a7\":98,\"865b1203-a4c7-4e34-ab6d-ca204a5da628\":123,\"86b5ce0c-0bf0-4c82-8588-b8c4cb55290e\":107,\"86bceb94-b4af-40d3-9281-06fa19a78b83\":8,\"86bd2fb3-ea6f-4bc4-b726-2c8f3627ac5f\":21,\"86e8c556-0fec-4c17-b9c1-7670777d0eab\":129,\"86f54a74-c0d2-44e5-a9bf-8d4ede9ae394\":51,\"874926e5-a5e4-493f-a9dd-47c624e3521b\":54,\"877b8289-db2c-4c75-a535-a26dc7f3645e\":89,\"88a62698-1157-4893-a71f-d458c0226ae6\":117,\"88d0f65a-d49e-424f-afb0-5fa5264f972a\":76,\"8913b8ac-71af-4d59-8e55-3608ced9ebcd\":50,\"896b1fa5-fc91-4955-8d9c-9c01ae5c74e9\":2,\"8a215458-357d-4cde-bcb6-1c6de35e4fb7\":113,\"8a56f9dc-a684-4c32-8ddd-0f10720a9f37\":124,\"8a7f7c1a-3758-4d1c-be9b-e524ab747b33\":54,\"8a9fd261-99e7-4fac-a04f-293d31635e51\":97,\"8bb50e9c-cff8-42a7-94d4-fd20ce528191\":2,\"8bda0233-d51b-4c32-9b84-2c5b29955ae7\":122,\"8bf14a51-7abc-4516-886c-4892adb64eff\":9,\"8bfe3b9a-e544-45e4-acbd-f7b785543f4c\":81,\"8c03fc3a-079e-4e02-b8bc-bb745bea9d87\":112,\"8c0e4ea2-a998-4d4d-b754-d0e921a7c1aa\":122,\"8c5d1b75-8422-415b-8e53-763eae8e7704\":62,\"8c7dd19f-2feb-49db-bcc6-731332bd5850\":72,\"8c8fc693-3bda-486b-baed-50c8b71e9e55\":18,\"8c92bd9f-979a-4c19-a782-39770a159628\":130,\"8d8fa7b3-acf1-405a-8e4c-b9e1217e3a23\":45,\"8d8fbc5f-5066-466b-a90c-76f25d8a2287\":116,\"8dd2ccc5-9853-4faa-8616-1c2460c8a497\":100,\"8e356835-3749-4f37-bdd8-71e07b3a1e93\":68,\"8e57b55d-0281-4d94-a64c-33ad779726ab\":59,\"8e654243-5a00-4a4f-bb48-6bfe8d7508a4\":119,\"8e91b498-340f-459f-9562-cc39ed8f255d\":86,\"8e945ae3-602c-4d4b-8791-6e3cd80b0c7b\":14,\"8e9a7bf9-f9da-444f-bcae-c07374be1a99\":71,\"8eb76ffc-82ff-47e8-add5-421affaaf3f5\":105,\"8ec66f03-7512-4b8d-a124-dc5920076a19\":97,\"8ec8829f-a3d1-43e4-a2e9-64f37928f659\":8,\"8eef72a1-ac53-484f-8927-b40f4cbb651c\":81,\"8f120392-57ba-419a-bc0a-7d593db35d16\":54,\"8f12d069-7518-400b-a885-c7619cdf9057\":53,\"8f98b6f9-ae95-4139-aadb-7d8ab72b77ce\":98,\"8fe92e5f-3b41-4db6-8772-41ca53f56482\":134,\"901db6ef-6794-4110-a520-a0002f91e5c5\":121,\"904e177d-68e9-412a-b27b-babad3724b9e\":64,\"9051f796-3cbe-4cb9-a86e-a588f1f11d00\":48,\"90915864-302e-4b25-93de-be4e8216810c\":116,\"90ca02c4-49ef-497a-8c43-bdc172225033\":47,\"9120d41e-c103-41cc-a01e-5339928bb3e2\":117,\"9129265d-d9ff-4596-adae-8e2efc5fc995\":50,\"91302596-0020-4b08-aa8e-36476ee8404d\":106,\"9161b023-6a67-468b-9784-7d1242ef6f85\":132,\"91fc70b3-87a0-45db-9e74-a8b3fbf336b5\":53,\"9211d6b5-44dc-49f9-81be-219943b44cce\":9,\"922d6716-a031-406d-9f63-deec2c50cdf7\":130,\"925e6edd-be3c-4617-adfb-0f82e03426e0\":45,\"928b5bbd-b68f-4387-9462-a84bfa30c160\":54,\"92dc1dfe-3198-48c8-8116-6dde528daad2\":112,\"93174765-7165-486c-baea-444ece510810\":67,\"935e7cae-27ce-45ab-bf22-6d6bdd25e32e\":56,\"9399bbf0-f895-4864-aa73-70df087b97f8\":76,\"9400d20c-4551-4a96-8870-af08f124d578\":32,\"94598161-e624-45c4-a6b3-b806756b14c7\":48,\"9463df31-8454-4a58-8e2e-783c1b2c91c5\":77,\"948260d6-1597-4a66-9652-04c304d6dc2f\":52,\"9508474b-0a30-4b59-97b9-cc68d241802a\":100,\"95142882-2c1b-487e-b8c2-a6eae557b067\":110,\"9514d5bb-f3c8-49b7-8c2c-74a956497321\":102,\"95180b62-e48a-4c38-ba4a-0f7170e9c195\":78,\"957fd9e0-fcb0-4f0a-b433-9cb28918050a\":21,\"95807075-1989-42ee-ba0e-8bae5e2f3db7\":45,\"95868f57-3c22-45b8-b649-fc850ee71114\":64,\"96c648cf-5489-46b6-a6c4-cf8e11e6c099\":83,\"96cd2398-2c39-4832-a69f-af527014ef25\":59,\"96f7be42-49e1-4fea-9536-c07cbefbf366\":90,\"97111012-166b-425f-9816-1f4a20e03e32\":132,\"9723769d-cb70-459c-bf40-ef66bfc786ee\":73,\"980ae7c9-1882-4895-a0a6-a5f5006f7370\":114,\"9849f463-5049-43dd-80c1-0d1aa92c7abb\":119,\"98528dcc-02b9-4e7e-98f7-a708fa236c54\":92,\"988c00e6-a06b-464e-be6e-fe5598f0720a\":131,\"98e3a0c7-9410-42fb-a2b2-0edb5462af58\":116,\"9900793a-2ac8-4358-9651-63911f6b4789\":104,\"99158150-b95b-44b3-9115-41627c3488bd\":32,\"99171201-18a9-4ade-bc6d-ef6248e34624\":70,\"99371a29-1759-4784-baae-94dd12b1960f\":33,\"995e0e1d-2dcb-44f1-9ee4-198e555373fc\":94,\"9981022b-17b6-4d06-8070-95c495099905\":18,\"99aac61b-08c7-4952-beb2-4f56d299270a\":132,\"99d7a2d4-b0b9-4297-9289-df8de59f4d7b\":94,\"99f75012-d489-4db5-85f4-4fd33c935874\":101,\"9a195e5a-0ba8-43be-992f-b4af4273811d\":67,\"9a3ef587-e914-485e-9451-4e78a81c9cce\":21,\"9a7c21ac-c9e2-474c-b327-545f5dd60715\":2,\"9a962197-8acc-4bf3-bad5-c2ed05c41837\":68,\"9aa7ecb0-bfc7-4c9e-b6b3-07062e1bb05a\":121,\"9b4386dd-9080-4875-a0e6-d9c2ba6fc6f2\":121,\"9b48ce3b-4581-4508-98a4-b64adf53263d\":104,\"9b7668bc-d4f8-4467-8d27-74902129c5bc\":112,\"9bc35a26-9588-452c-b9f7-dce833bf4895\":97,\"9bf29508-e669-43a4-baab-07514d7950a1\":52,\"9c0b8297-a0eb-4e86-9597-de52305c4cca\":80,\"9c27055d-e92a-4448-9467-6af11099b3b5\":132,\"9c3393c2-67ab-498d-a774-9f955e341299\":76,\"9c6d1bb0-6e88-4ef9-a9d8-d287b21d661e\":18,\"9cf2a750-ba7d-4ac3-9eab-bcf475206ee1\":94,\"9d2db9ed-7d0f-43f2-9cc5-d3bf1975abfe\":48,\"9d68065f-35a0-43b7-9334-7dbb6ec3b86c\":40,\"9dde1094-8fdc-4704-a7bb-3d34bbdddca5\":109,\"9de9e62c-1126-4519-b638-7a3d13a788c7\":47,\"9deed22f-31e8-4fdd-9015-44934065738f\":117,\"9e4d3c3c-bda9-481b-937c-f03a3b997f06\":14,\"9e5ee0ba-9f56-419e-8cfa-8b39a2454fce\":111,\"9e8fbbe5-6f33-4b18-b079-fdcd6141f51d\":67,\"9ec23f6b-b6f9-45a6-a47e-f35f2a7751ec\":68,\"9ef98113-6b39-4a99-ac03-67cd5a98b743\":95,\"9f3c7b05-ba7d-41e9-948d-38f594f1cd6c\":130,\"9f4f2b7e-676d-4aa1-b0cb-003de5650879\":56,\"9fd03456-75a3-4d74-89f8-6d630f3fa658\":71,\"9fd2c93c-2146-4c4f-97da-212b82e8535e\":84,\"a099b05e-071e-4bac-a80b-130754053fa2\":51,\"a10d3eb0-007f-4c66-9502-2980f40af8e7\":86,\"a1b9d24d-23d0-4799-8736-89d1ef968361\":50,\"a1dc116b-fdc3-4f34-b9c5-bee2382e5509\":72,\"a1eb2a47-1b50-4703-a460-273ca448e257\":8,\"a2688ede-892c-4f16-a6e6-db4642ab6ac0\":92,\"a287daa4-0ca7-489d-8503-772d94e1f3c7\":70,\"a2e608b7-f8c7-4064-9705-6015c6573cb3\":77,\"a2e83989-c55e-4767-9bed-266ac976434b\":33,\"a3dc6ea9-4257-409e-bd30-29a5ef2a931e\":72,\"a4828c8b-d58e-47c2-957a-4c49268c2868\":75,\"a52b9d84-d267-458c-9f7a-e77f6163e62f\":109,\"a5501947-edbc-49b6-aabe-40f22ee5f13e\":94,\"a58c9500-f31e-41d6-b82c-489cd7b2fa15\":12,\"a5b8c28a-1142-4ea3-a1ed-daa9a3f0e1e1\":49,\"a5e33fab-fa4a-459e-8830-f476f854b67f\":80,\"a60bfd16-5745-4c41-8d38-d60ad76dd83c\":122,\"a63dacf8-4dae-4fa5-899e-cf1c34c8a480\":49,\"a66a276d-61cc-4f87-9afd-d7e68e8d3873\":118,\"a6a41478-b3f0-423f-83f3-50f457f27edd\":9,\"a6cd0b13-90c6-4353-85a3-053433c7cb9a\":89,\"a6ea0248-fd65-4af7-85a9-885f15806ffd\":54,\"a700c6d3-b6ed-4225-aab0-0330b9592638\":110,\"a712becb-c136-4034-bf00-938b69d53cd8\":118,\"a7b71420-ba17-49f5-9f2a-85b494f57499\":9,\"a8c262cc-057a-42bd-baf3-47c47d56ef3d\":115,\"a932c06b-f8b3-48b3-935b-cb7431e8df0a\":62,\"a93a0865-76d3-4636-b7c2-4da5c358a5fd\":121,\"a9442610-ca9b-4c40-99dc-77d79148f28b\":109,\"a94d18f0-405e-47e3-a3f0-868022c56014\":89,\"a96ee14c-3b20-479a-8a70-7bbe4b2edee6\":14,\"a99677c0-db4c-4936-a64a-ffbaed225a42\":64,\"aa603e1b-5c36-48c1-b158-2f6c3366f724\":74,\"aa88d9d4-134f-4046-bd0f-1a0f4370ceeb\":104,\"aabf3851-6a59-41da-b9fe-4dfc326f11c0\":88,\"aadc65dd-a7f8-423c-92e5-80c647a58bae\":113,\"ab7614a9-6bb1-45ae-80bb-8ed53afe9b58\":88,\"abf91955-d279-4d5d-a5ad-0daec2e92105\":110,\"ac0f5119-b64f-4849-9b5b-bcf4bfb4bc8f\":91,\"ac44f9fb-37b2-47aa-a369-e6e9093caae8\":54,\"ac489a2f-ecdd-4984-a82d-938714d6c90a\":74,\"ac7ead40-d5b5-4a7e-9396-1079c90e011c\":44,\"ac940606-8e74-4408-899f-f55dc9ea6f61\":28,\"aca165b5-3505-473c-9a5a-1ef4b8bfdf47\":90,\"aca43c61-b72a-4537-8ba2-1a533d040f9c\":107,\"acb6c01a-5ebf-4eb6-a16d-a94908a99c41\":81,\"acf5aca2-dd79-4e2a-8890-ac9b6c89622a\":92,\"ad865c7e-5360-40d3-af94-895df6103a0f\":2,\"ad89c166-e5f5-4ec8-9e85-b5027e28155f\":134,\"adae5305-c11c-46dd-a369-ee160139b729\":84,\"adbcb858-d991-4c26-8948-a7ac4abcba4c\":112,\"ae1ffc48-a7e1-4342-82be-c9788eb5fb3c\":73,\"ae299a63-a952-487b-915b-26a40112f037\":126,\"ae63d8a0-d5a7-4ea9-b317-605fc16509e5\":117,\"aec41d60-7e99-4f96-863d-507a57a8ba06\":118,\"aed54068-5340-458e-9fad-dd37a3222356\":114,\"af2c501a-76af-4abb-a1be-bc235eb56bf5\":76,\"af60f024-b736-49c2-85fb-f134ef0c9dcc\":86,\"af864e49-f21b-481f-ad70-e9ebac5e7ba5\":109,\"b0000300-6e3a-4809-bc73-9523cdd506bc\":14,\"b020f983-69f1-4cfe-a4c8-35ca261d7cc3\":101,\"b07b8dfa-4d6e-4a71-8f9d-d4562055de97\":18,\"b0b4767b-4036-456b-9813-513bee33a447\":111,\"b0d3ce75-882b-47cd-8bde-1e8a0c1498a6\":53,\"b1755638-01e2-4bb0-866d-40adb623e380\":40,\"b22e3f4f-5ba0-4f77-a8ef-19995ab0354e\":76,\"b2ad630a-7273-4b82-a698-728a1c773b85\":91,\"b2fa9a79-b3a0-4fba-8664-175e71d43992\":100,\"b3391583-b8d2-438e-918f-d6c5686d59b0\":112,\"b3946d8a-6e50-4b98-9ee2-5c8e208ecd01\":101,\"b3bb467f-d9c9-46f5-84d3-c4e5d715544e\":126,\"b3c16fef-1433-4ea4-8c96-686d758b0a84\":52,\"b3e1a7b9-4254-46b1-9166-4fc6eb840a63\":121,\"b3fe08cc-50ae-47f2-846e-98640661ffff\":119,\"b464b342-f193-4b3b-b09b-5194b31030ec\":117,\"b471f85b-b3a3-4b61-9cef-8d0c15b8999a\":48,\"b47af4d4-4b70-4b3e-a151-4b8806b61890\":77,\"b49482d3-62b0-4455-84da-c47a817928c0\":73,\"b49c6962-4e15-45ae-9212-6a62a48cc4d0\":80,\"b4aa24a9-7562-41cd-bead-fe58e15740dc\":84,\"b4bdc274-06db-406d-bf0c-ad89e875950f\":128,\"b50ebaf9-7219-446b-933b-651cba990cba\":12,\"b527d350-b7b2-4b72-bb75-1c0a413dd1c6\":40,\"b563969b-d55c-4246-accd-309a1b703a19\":70,\"b56e3b83-b91b-471e-b546-0e8f393f2691\":70,\"b57e3b29-0755-4175-bc07-06e85746a371\":112,\"b58780ab-a8bf-47f1-b8e9-ce824a10a6de\":14,\"b5a8aaed-0018-4e7a-a1cb-4535b7a00c55\":21,\"b5c0c27e-b1a8-44cf-9dcf-b0db95b6a890\":83,\"b5c41c01-9e34-4cf1-b964-b804665a3f19\":115,\"b63a49e1-98db-42be-ab95-7111f2866752\":122,\"b663c376-ddde-4501-931c-05e16f1c6d14\":72,\"b68af63d-2566-4063-8525-fd6e73f3cbe7\":51,\"b76b2791-3aac-44b8-b1db-0cec84c43c75\":126,\"b76e3ac7-3d24-437e-aba5-5bb6c901fdf4\":18,\"b7970679-a980-49e5-9a18-f15d22aaa5e9\":117,\"b7ab8a92-b802-4acd-8298-e6707b30c184\":54,\"b7d0d453-bdc3-49bf-85bc-157397e7f9f7\":5,\"b872b06e-3f07-441e-bb78-cd0e9e1ae6b4\":21,\"b8741e0e-874e-4270-b0c5-14abe868feed\":137,\"b8e63272-947f-4cf9-8440-4a746684c004\":56,\"b9237d56-dbd2-47bc-8497-5a97f8c8cd5c\":126,\"ba23e954-be5f-4504-aa39-03f2c4222c1f\":116,\"ba24c8f8-3777-48bf-ace8-fea5b88e264a\":83,\"ba4d6cc0-bd6f-49c8-86da-043acc539133\":44,\"ba68ac35-e783-45cb-ac06-f642122fc4c2\":2,\"bac390f9-cbf2-4417-8f95-381d2494eede\":32,\"bb2cdf82-0eac-4593-a714-2dbb054488d1\":40,\"bb71efda-07d0-49de-a227-2edde86cd549\":134,\"bb9e010e-7299-4b30-90a8-09aa65d238e1\":118,\"bc2a9376-a479-4bc2-bb7d-2d3201ad5ad4\":134,\"bdbdc00d-50e7-4233-ae6c-ffcc9fd36563\":52,\"be12f284-9201-49c7-b227-3e11c33d061c\":128,\"be1e79fa-311c-4e46-a215-6ac770effab4\":2,\"be43ba55-43f5-40eb-a4b3-f61a04d6e7ad\":103,\"bf42d373-2103-4d34-9dc4-5f7d09a84846\":12,\"bf4461e0-d393-4fc2-b7e5-f9b55a8fc9ea\":50,\"bf4b0fba-3e65-49e0-8103-36635e66bb1a\":64,\"bffce2f7-b47d-4c3e-8248-2647d5fc8ae7\":48,\"c0077bd8-37b2-4ece-b52d-21b22d70c2a3\":62,\"c04bb520-7bce-4bd6-a4d9-0a78e2f07b2d\":59,\"c0aa869e-f4bb-449a-a39c-36153dbd8dc3\":92,\"c0aea1a4-1ef4-4c77-ba60-6d76c760a6c9\":80,\"c0b9b65f-dae5-451c-9a1e-c5e9be6fbf1a\":128,\"c0da5c6d-fb84-4003-9315-7f8654bd2d57\":88,\"c0ea0f8e-ac89-44fe-a9ec-08764775e022\":18,\"c1360eb7-3dd2-401a-a545-fc0f4b553601\":95,\"c15b0f62-fc30-4f1f-889a-43da74fc4c6e\":104,\"c17fbcd2-0258-42cc-9f21-3227e6273388\":33,\"c1ced9fe-ed8d-4dc2-9457-2b86a8b86594\":44,\"c1f83974-ab66-45f4-93ef-5f353a088408\":105,\"c1fbd611-2c73-40cc-a180-be95655994d0\":78,\"c23b870d-58b5-4bca-a478-33a52a88af21\":98,\"c2470c49-2d6b-4d3e-a125-cee2f19a0790\":33,\"c25f95c8-56d2-4010-84b5-d6ab19e552f5\":124,\"c264d818-42b4-49fe-a533-9da8f69d7877\":134,\"c26519ed-d7b7-40ba-9d0e-35bbd2da94c8\":70,\"c29d226d-54ee-41e8-a75d-40a91176cc57\":52,\"c2b5f4ed-bacd-4013-9e95-9cd9ab16ba02\":104,\"c31dca33-5fbf-4186-8129-f4d3aef5e94e\":112,\"c331ac9e-43de-4b09-9a1e-e70144ce91d9\":9,\"c3600784-7d6f-4a63-aac5-eb7305d5d5b9\":124,\"c3805957-2618-4d8e-8ef6-92fa7c627b1b\":111,\"c3f8b6d2-aa8d-4677-942e-28e8af002dd7\":21,\"c402e81f-38bf-4580-b330-92c58f6e7320\":91,\"c41c8a6e-4b25-4d5c-b0b3-3ffe44c7f463\":110,\"c447fa8b-829e-4d60-9796-6f048b16430e\":14,\"c448fcd2-dfc5-4b97-93f7-e956b1ae5ea1\":5,\"c512e8c7-f3fc-4d28-b421-39f06a039a0e\":8,\"c52496ad-ca7c-4206-8100-6a5fe32f68e2\":88,\"c59ad1a6-c2e3-4179-99f6-c1c798c325fb\":2,\"c5e7336e-288d-4aa9-9153-e0070e3cc091\":14,\"c5e86e58-10a7-4a74-bbd0-9bf5eedbe4ce\":56,\"c61d5158-94ad-4678-84b5-75c5218ff0db\":91,\"c6b99942-c858-47b7-bc95-ce317e7d8315\":8,\"c6b9c737-44dd-4375-9394-f733d5c3cf99\":2,\"c7b2275a-ebfa-4d34-9161-543aa8f149d9\":118,\"c805ce22-5d87-40a5-a562-83787d29ee74\":100,\"c8a54432-dc75-4a30-9b24-738c6130bf49\":102,\"c8b78988-7d60-4824-ac43-489790677621\":54,\"c947400e-56be-4048-a770-7b6dcb176fd6\":92,\"c98e9032-5624-40b6-b6b1-04988a00eff0\":2,\"ca20dde1-1733-4443-983a-3f3f3b65b688\":50,\"ca4053ec-e7a0-48c4-b2d3-4d3aead076e7\":48,\"ca7c6b08-d3c7-4104-9492-4aad30dbc4d4\":49,\"caab8731-cfba-454a-af85-01c96e104903\":115,\"cb6d8b0e-e1e6-4c82-9777-f92973053104\":64,\"cbb429f8-1c07-44b0-b977-7022be6c84ba\":98,\"cc2a65d3-2064-4819-b3d1-7541d3c7746e\":128,\"cc4ecb85-b47e-4293-8825-e9bf57722b82\":33,\"cd65e3db-f1a5-44c5-8088-9366011ba1fc\":78,\"cd7fdd35-7a4c-4a28-bff2-34d4e66dfded\":77,\"cda2de91-3a7b-475a-95d0-9db4ba5d6df8\":32,\"ce0d4e94-07cd-4361-946b-7541ded0f444\":21,\"ce1de3fe-9c6e-49af-b0c5-cedc89a49c52\":5,\"ce24b469-8b23-49b0-abb6-4060008b2e39\":92,\"ce4f18d8-f92c-4819-8365-0a7df086d174\":67,\"ce63246e-3413-409d-825a-69c7183eb3b1\":14,\"ce98c794-3ef1-4646-ba45-f5c14ef982c1\":84,\"cec051d9-b247-4902-bbb4-9fc799fce99d\":49,\"cf2c9e50-e51e-454a-a30c-1a9cd34e17f9\":103,\"cf7ddf2e-c4dd-4eb3-97aa-7d6e3fdf42ad\":126,\"cf7ee8a7-ce07-4db4-bc37-7034b8f4281d\":18,\"cf96bc5b-da33-4d01-922a-b39d4eb7d28f\":50,\"cfc8cb9e-fe8d-49ec-9a89-25cb98fb750b\":75,\"d003cb18-f271-469a-885c-9915474236c2\":67,\"d036fe22-50ad-47ce-a6fc-e76c7b16da00\":109,\"d07cf5d6-dad5-47b6-99e6-b6bef0a19e40\":76,\"d0842e4f-f60d-488f-9e6c-d9abed3f5da0\":104,\"d0997d5e-1db9-4bf8-878f-7c8d8b8b0b62\":123,\"d0bd35b1-39dc-4df4-a52a-0ca8fa5722da\":28,\"d0cc0654-d234-472c-8792-9f7eeff93ef4\":106,\"d10acd4c-1cb0-4cbf-b831-ed3b24cbaea4\":12,\"d16fec04-af64-4c8d-9956-4d32cd0b5717\":123,\"d180dd77-7288-4968-8060-df0e723a411a\":70,\"d1ee8571-d20d-418c-a032-83b47f4f4f39\":119,\"d20d08c4-f1a7-4b4c-9a68-c1ca2556e85d\":47,\"d26609fc-5704-477e-b098-4af1476f6fcf\":56,\"d2893b56-13a4-46a6-82df-79d82c699d33\":95,\"d2979426-4a7f-4a07-8234-e9577dc0a074\":84,\"d2cdc270-dc63-4b05-83a4-fadbf1c3ceef\":128,\"d2d67a09-e794-47d2-8e50-5406648ebc48\":77,\"d30a55bd-8a84-4612-a25a-6651d5e43ac8\":32,\"d32f5c29-0598-4b46-a261-71ed1f25c30e\":40,\"d3651b27-1d73-4d96-bea9-3ccd59e80f79\":124,\"d3b83640-5db2-4aa8-b449-349ae1c6594f\":93,\"d3ccfb50-833a-4fcd-9197-4bff037c64b6\":107,\"d3d0f3a8-5fbb-49f8-9050-6d3129f49189\":122,\"d4b11193-3fd1-496c-9064-9d3171a0dbae\":75,\"d4b472ca-f206-4d8e-8756-e965ccb15474\":129,\"d4cceb4e-3f6d-496b-a14b-3551c6cf0185\":76,\"d5809d88-83d5-42a2-b520-aebd404d9712\":118,\"d586e1dc-0972-4674-aea4-f58fb5aea613\":33,\"d5c9e9c3-ae89-4894-b7d9-6f3bcf06ce96\":122,\"d5e8ce4d-9fec-4dec-b55d-99a0420d304e\":117,\"d608f4ae-e64c-4b8d-a5e8-7d287544e5a9\":103,\"d6b37917-591e-4f71-897d-63f14bbe2fff\":131,\"d6b98b17-9332-4470-bca0-df00f6e55ba0\":45,\"d7468a0a-963c-483e-8308-b082a1c2883e\":64,\"d769513d-89f4-4d25-9210-fa5074641ea3\":114,\"d788c72f-7302-4933-b349-106cb40797dc\":119,\"d8136381-9d41-4477-8470-c2b7efe8da32\":2,\"d840c57c-722c-4550-b51c-c448c58edf58\":132,\"d8537319-96fe-437d-b316-14b9a83dce9a\":106,\"d8f124c5-3236-47c7-ada7-44f5569d65a3\":67,\"d923e5c9-6361-47b4-939b-91fd21995602\":45,\"d9acae74-a0f0-4ae6-b965-b614b3813bef\":56,\"d9d5e609-dd2f-4d48-9b75-2b3091c4dd05\":94,\"da5dd3cb-fa9f-4fe6-aa5b-70b85b8c0e4f\":73,\"da7e46fc-9a08-4ea9-8239-551b0e5611e3\":33,\"daf31c73-51b0-4fb0-88d3-60dafbb921bb\":112,\"db85140e-719f-4013-bc77-374bfd425c2d\":102,\"dbb76efe-3dec-4dd1-aef2-107325b98c95\":5,\"dc5116e8-6d7e-4f66-8be9-675c148f11fd\":84,\"dd075f37-b147-4c86-8de6-48b656b56c73\":48,\"dd42d1ca-62a5-490c-8942-7035adc47357\":102,\"dd4ad75b-1e53-421e-885c-a62f3cd5c05c\":56,\"ddd30da0-4f51-4bef-867f-81727b73f332\":84,\"dde0975a-f543-4b8c-b7e4-5fe5a6012bd7\":97,\"de96d83e-f6f2-4e5e-a8f3-0a55ef001ff9\":56,\"de9956d8-59aa-4ef9-8dd7-e05546841ddf\":33,\"dea21e59-0377-4827-98f2-4c00414c2522\":93,\"df5cabe3-3001-4214-9ef1-4c22aa360397\":14,\"df7ecc54-0523-4478-9333-2be5f6dc5e9a\":89,\"dfb585c9-6d74-45d8-82bb-3567807bf54b\":107,\"dfe62194-d5bc-46a9-bc85-42446fd5c792\":71,\"e03f4202-7845-4969-b8d0-5d728d8efcc7\":134,\"e0ec4b38-d8d1-4524-a3bf-3ea516302e70\":137,\"e10c3cb5-c81d-43d6-b789-3df2de4ec9f9\":114,\"e137803d-c991-45ac-998c-c366e98aa8be\":62,\"e14886b1-447a-4c76-82b0-7694160c05e9\":112,\"e1c4634e-c8c3-4097-a3b2-3d2db3c434b0\":21,\"e1ff429c-8161-47f8-a598-d19b1ae93267\":12,\"e201ed92-8e48-48a2-a3cb-9f72a42f8fce\":90,\"e2392201-caa9-4804-9dcb-e1d4064b2942\":88,\"e29762ba-3106-4795-880c-7e98664f4088\":32,\"e2adc51f-3a24-404c-a245-26e10edb6bc9\":109,\"e2d9e7ee-798a-4439-98a5-8354370d3ae4\":78,\"e314392e-a4a7-4ea5-892a-05eb8801f09c\":74,\"e338c050-eba9-44af-89db-5177ce52bc06\":70,\"e368fe8a-ceb4-43da-bbda-e13cd078ac38\":72,\"e376a627-770d-4ef9-a7c4-ac2233831c3b\":48,\"e395ed0b-9a4b-4697-8b3a-fc8ea3ec165b\":130,\"e3a55b88-b38b-453e-829c-88419dd54529\":32,\"e4882540-7098-4d98-bd10-dd0b69ebeba4\":137,\"e496daf7-6304-4c90-a52b-fad4fbff23b1\":98,\"e49e7633-d138-4eb1-8717-82f4bcbbf793\":8,\"e4b6a0f2-68c0-4731-adc5-a23df714a94a\":106,\"e4e02c47-ed7f-4011-8442-e47904aef356\":21,\"e51225c8-0112-43bc-a844-c0bf8b35cb9b\":131,\"e51a43db-c8e0-4665-a004-4e9b2932c97b\":110,\"e5707085-547f-44d6-b5da-1fd1b6b14b6c\":49,\"e581e78e-863b-4508-9000-6edc7494e7e5\":131,\"e5ac01d2-95f4-4aea-bfc0-066d0efee950\":110,\"e6431dbb-e4f1-45af-9dce-734cdb857f75\":86,\"e66ab2a2-36e7-44d6-810d-bf3dc9d397a8\":113,\"e673a735-0326-4502-9717-f2e731f4f3da\":119,\"e6fc9cdc-cc2b-4f5f-b196-9195d08625cf\":129,\"e7fa215c-b0f2-4633-9212-df23938739ba\":100,\"e842e373-3b4d-467d-86e5-3213bbeb2004\":102,\"e8606c79-64cb-4990-b634-4b028a07f235\":111,\"e8a2df5b-fa9e-4eb4-a8ee-da42aa7c2ee2\":52,\"e8fe322e-7ab9-4ae1-b70e-60f899032576\":114,\"e90d5810-cf3b-4dd6-975e-de8dc54a5fa7\":93,\"ea24a1af-1734-4701-960b-7f8816355467\":33,\"ea40ff63-d7bc-4944-a419-a4646a17bede\":28,\"ea423b3e-a093-4a4f-9e0a-bb28aca2c0c1\":105,\"ea6c2e45-8d73-49f9-a31c-b63d67336fc8\":124,\"eb204cbc-d804-4c06-be85-3e9195776a01\":53,\"eb2a2fc3-2efa-4a13-a03d-3907b7ff6964\":90,\"eb439550-2cfd-4a62-ac50-8b138df10a1b\":119,\"ebc7f7df-56f7-4f97-a5ba-a0705926d131\":116,\"ec2075d7-a0e9-426f-aa28-42670de922cf\":115,\"ec64dbb6-b0b4-4960-95fc-a029394e1b17\":122,\"ec9bf62e-f410-44fb-b38f-4482092ef319\":90,\"ecbc2b8f-8897-4660-a125-9adf52b188bd\":75,\"ecdb9f6a-dfd9-4ecc-a432-d63dab833048\":53,\"ed4e92e4-1ece-4190-89fa-55839fb039d2\":21,\"ed6677f8-9896-4471-8523-abd12fe21a5d\":91,\"ed92e6d1-3a92-4d80-9cf9-c9e891eaca54\":114,\"ee012acc-f331-4bd0-8002-24e6572fbcbe\":132,\"ee078afc-0939-42e0-8d5d-2ddd7478bf69\":83,\"ee96f794-07a7-474c-a163-3bdcc547e443\":52,\"ef00b356-ec06-40f6-8742-afc875231435\":97,\"eff5e9f1-5e44-4036-907b-61c284ab6f93\":40,\"f00ebd87-0bc8-4a52-befe-f43296b3c0c3\":124,\"f027c355-7fac-4b79-ac04-b5cb2ce8bab2\":106,\"f03e57b4-7f1c-4028-8990-544e1b58fc26\":14,\"f0492d54-e525-409d-a7f2-b8df4f75937a\":131,\"f0531946-3b43-401c-9939-47650eb1935a\":106,\"f0637886-85bf-4dce-b713-5271949f88c2\":137,\"f0654b8b-8515-40a4-b687-1774f8d4f675\":52,\"f06e5fba-7a67-4a39-a6b7-d08ed11cac20\":62,\"f0d4443e-44f5-4888-a206-cacee75ebae6\":126,\"f133793d-a93b-444c-8553-fd7771ece998\":126,\"f14c70d1-6c93-4f72-a2d9-5940bc597532\":73,\"f1522a25-4394-4534-bef2-d82e561ea256\":18,\"f16b77a1-a145-4b20-b1fa-748819359d19\":2,\"f21bf543-b1c6-4327-be31-666229cc4cb8\":78,\"f23759f1-cdc8-461c-911d-3674649ec161\":70,\"f2bae29a-5770-4dd9-bd98-6fb77a41940b\":132,\"f2d79dac-26e8-4f8c-8186-3e5eca479f26\":121,\"f33665b4-b261-4d0a-90ad-0521afd7788d\":130,\"f3368d42-0c4b-41a7-bcaa-72805a5fcfa5\":59,\"f33e93fd-08eb-4688-9cc1-fe33e53b3b29\":54,\"f34e606e-80a5-4b20-9f17-68c0cd501026\":33,\"f3542320-d095-4218-8568-46e299dc1f4c\":105,\"f3903ba1-008b-4c5b-b907-da159b240e98\":105,\"f3996c2e-fc2c-4780-8f74-3afb603d9565\":80,\"f3a3d3ad-5937-442c-931f-e85348faaa81\":92,\"f3aee11e-f4a9-4954-bfad-91abf153adf0\":114,\"f42a5165-8d04-491b-8a4a-6a55b57f74ee\":92,\"f49af6c0-5b2a-46d9-a033-6da78e40cf91\":28,\"f4b3f2a2-ca37-419d-b466-56598b4eab3e\":59,\"f4efcd05-f2cf-4e3f-be3a-3e924794a4c7\":76,\"f56bb225-7186-492f-9eb4-98bcdad03a58\":73,\"f6890829-3527-4b02-8eec-ff66c9e067c7\":49,\"f6a020f6-76bb-49df-ac81-097a95406911\":28,\"f6d33973-3b13-46dc-a37e-59d947120f2e\":51,\"f6e0f200-c09d-4f35-9a3b-7b3485fd87c0\":105,\"f74fecd9-d0fe-48a4-a16a-273c3d5567ba\":73,\"f7b62d1c-9b5d-4087-8f23-577541cf19bc\":83,\"f7f2f90c-acf3-4bfa-b19d-fa78b97d5b7f\":78,\"f8cdde79-c2ae-49da-8441-b4db0668b662\":8,\"f8d46933-d2d8-4973-a2ef-de92b1e64d7c\":18,\"f91923df-0071-4560-894e-6718ef6cff83\":45,\"f959def2-5aff-4f45-8d40-5d68986aa3f7\":97,\"f96d11c8-5f25-4e2b-9774-139c7aca4962\":104,\"f99d6964-3d18-4eed-bcb7-b7c75d25a99d\":91,\"f9afb9ba-8579-4442-9336-c0882a25f4de\":72,\"fa1e8977-ea56-433d-a345-35b51ad4cf7a\":5,\"faab40fd-7665-4b74-b652-659d178eabee\":5,\"fad374a4-26ec-4b7d-bfb5-9f37ea002352\":73,\"faecd3d2-7ea3-47ef-b90a-a7c0b5adaf38\":124,\"fb1bb321-73a7-42d6-a304-6725d4c2e41e\":119,\"fb271128-8c01-4b5b-95ec-b3e10e613fed\":75,\"fb37c5e3-b17c-40c1-9d93-965a254b223c\":124,\"fb549e74-04af-4911-9a6b-aa7a2b707789\":81,\"fbb428ea-d9ff-4361-bdaa-a2b8adfc854b\":68,\"fbc59da3-5bb5-4561-91fb-223c1da2c949\":122,\"fbc6aa82-0da9-48f0-bc10-2c96eb26c015\":40,\"fc9e352c-2fd5-44d6-a953-3cc433e71add\":104,\"fcce5cfd-454f-431c-a26f-3134cefb13d6\":70,\"fcd7a79e-5c86-4ec8-86ae-5bd250298585\":100,\"fd74a8e4-3ec3-43ee-84f0-2b6f165e3f17\":51,\"fd86d789-e728-4e8a-9452-a1da56c24a5e\":5,\"fdd933ec-1904-41bf-8fbb-e6e474d1ee0d\":101,\"fde31834-0539-4060-884a-957349dfa209\":80,\"fe29ac27-d309-46c7-8590-6ffb592db48f\":71,\"ff197771-89d2-4331-9554-c13631adb48d\":106,\"ff276771-148f-4ec1-99c4-95c61c7976ec\":76,\"ff2dbbc6-831c-4a56-850b-93d7daeb3f65\":90,\"ff5e7a40-fbea-4d33-b34b-e855a3afafb4\":28,\"ff88209d-96af-47da-aadd-0128bf3e6d26\":47,\"ffbccbc8-3fc8-4fca-91e9-35e2450ffe91\":124,\"fff313c1-d064-41a8-b5b1-40d55a38d20e\":28}}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"data = spark.sql(\"select a.id \\\n",
+					"                       , a.storeId \\\n",
+					"                       , b.productcode \\\n",
+					"                       , b.wholesalecost \\\n",
+					"                       , b.baseprice \\\n",
+					"                       , c.ratioAge60 \\\n",
+					"                       , c.collegeRatio \\\n",
+					"                       , c.income \\\n",
+					"                       , c.highIncome150Ratio \\\n",
+					"                       , c.largeHH \\\n",
+					"                       , c.minoritiesRatio \\\n",
+					"                       , c.more1FullTimeEmployeeRatio \\\n",
+					"                       , c.distanceNearestWarehouse \\\n",
+					"                       , c.salesNearestWarehousesRatio \\\n",
+					"                       , c.avgDistanceNearest5Supermarkets \\\n",
+					"                       , c.salesNearest5StoresRatio \\\n",
+					"                       , a.quantity \\\n",
+					"                       , a.advertising \\\n",
+					"                       , a.logQuantity \\\n",
+					"                       , a.price \\\n",
+					"                       , a.weekStarting \\\n",
+					"                 from surfacesalesDB.retailsales a \\\n",
+					"                 left join surfacesalesDB.product b \\\n",
+					"                 on a.productcode = b.productcode \\\n",
+					"                 left join surfacesalesDB.storedemographics c \\\n",
+					"                 on a.storeid = c.storeid \\\n",
+					"                 order by a.weekStarting, a.storeid\")\n",
+					"\n",
+					"df = data.toPandas()\n",
+					"display(df)\n",
+					""
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"productCode"
+							],
+							"values": [
+								"storeId"
+							],
+							"yLabel": "storeId",
+							"xLabel": "productCode",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "{\"storeId\":{\"surface.go\":8132,\"surface.laptop3\":7429,\"surface.pro7\":7843}}",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"#display(df)\n",
+					"\n",
+					"def read_from_analytics(accountendpoint, accountKey, preferredRegions, database, container): \n",
+					" readConfig = {\n",
+					" \"spark.cosmos.accountendpoint\": accountendpoint,\n",
+					" \"spark.cosmos.accountkey\": accountKey,\n",
+					" \"spark.cosmos.preferredRegions\": preferredRegions,\n",
+					" \"spark.cosmos.database\": database,\n",
+					" \"spark.cosmos.container\": container\n",
+					" }\n",
+					" \n",
+					" return spark.read.format(\"cosmos.olap\").options(**readConfig).load()\n",
+					" \n",
+					"data = read_from_analytics(\"https://rosouz-cdb-analytics.documents.azure.com:443/\",\"uVNGlqfIUQNhbULUvfrpCjWIf1yUj2V3Z2QcxA3qvTXujsHL2kIE8WuUVsjE01AuP43vJ2hMzLTVrG9BT8uPBw==\",\"westus2\",\"CosmosAnalyticsDemoDb\",\"RetailDataNik2\")\n",
+					"df = data.toPandas()\n",
+					"\n",
+					"del df['_rid']\n",
+					"del df['_ts']\n",
+					"del df['_etag']\n",
+					"del df['id']\n",
+					"\n",
+					"#display(df)\n",
+					"\n",
+					""
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Leverage power of Azure Machine Learning's AutoML to build an end-to-end forecasting pipeline\n",
+					"\n",
+					""
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Azure Machine Learning environment setup"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# import pip\n",
+					"# pip.main(['install', 'azureml-train-automl-runtime==1.7.0'])\n",
+					"import azureml.core\n",
+					"import pandas as pd\n",
+					"import numpy as np\n",
+					"import  azureml.train.automl\n",
+					"import logging\n",
+					"from azureml.core.workspace import Workspace\n",
+					"from azureml.core import Workspace\n",
+					"from azureml.core.experiment import Experiment\n",
+					"from azureml.train.automl import AutoMLConfig\n",
+					"import os\n",
+					"subscription_id = os.getenv(\"SUBSCRIPTION_ID\", default=\"49d66a68-7c00-43c3-93ae-602ee60e1eb6\")\n",
+					"resource_group = os.getenv(\"RESOURCE_GROUP\", default=\"CDP-VISION-DEMO-RG\")\n",
+					"workspace_name = os.getenv(\"WORKSPACE_NAME\", default=\"Auto-ML-2\")\n",
+					"workspace_region = os.getenv(\"WORKSPACE_REGION\", default=\"westus2\")\n",
+					"\n",
+					"ws = Workspace(subscription_id = subscription_id, resource_group = resource_group, workspace_name = workspace_name)\n",
+					"ws.write_config()\n",
+					"    \n",
+					"experiment_name = 'automl-surfaceforecasting'\n",
+					"experiment = Experiment(ws, experiment_name)\n",
+					"output = {}\n",
+					"output['Subscription ID'] = ws.subscription_id\n",
+					"output['Workspace'] = ws.name\n",
+					"output['SKU'] = ws.sku\n",
+					"output['Resource Group'] = ws.resource_group\n",
+					"output['Location'] = ws.location\n",
+					"output['Run History Name'] = experiment_name\n",
+					"pd.set_option('display.max_colwidth', -1)\n",
+					"outputDf = pd.DataFrame(data = output, index = [''])\n",
+					"outputDf.T"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Feature engineering, Splitting train & test sets\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"print(df.columns)"
+				],
+				"execution_count": 10
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"time_column_name = 'weekStarting'\n",
+					"grain_column_names = ['storeId', 'productCode'] \n",
+					"target_column_name = 'quantity'\n",
+					"\n",
+					"nseries = df.groupby(grain_column_names).ngroups\n",
+					"print('Data contains {0} individual time-series.'.format(nseries))\n",
+					"\n",
+					"use_stores = [2, 5, 8]\n",
+					"data_subset = df[df.storeId.isin(use_stores)]\n",
+					"nseries = data_subset.groupby(grain_column_names).ngroups\n",
+					"print('Data subset contains {0} individual time-series.'.format(nseries))\n",
+					"\n",
+					"n_test_periods = 20\n",
+					"\n",
+					"def split_last_n_by_grain(df, n):\n",
+					"    \"\"\"Group df by grain and split on last n rows for each group.\"\"\"\n",
+					"    df_grouped = (df.sort_values(time_column_name) # Sort by ascending time\n",
+					"                  .groupby(grain_column_names, group_keys=False))\n",
+					"    df_head = df_grouped.apply(lambda dfg: dfg.iloc[:-n])\n",
+					"    df_tail = df_grouped.apply(lambda dfg: dfg.iloc[-n:])\n",
+					"    return df_head, df_tail\n",
+					"\n",
+					"train, test = split_last_n_by_grain(data_subset, n_test_periods)\n",
+					"\n",
+					"train.to_csv (r'./SurfaceSales5_train.csv', index = None, header=True)\n",
+					"test.to_csv (r'./SurfaceSales5_test.csv', index = None, header=True)\n",
+					"\n",
+					"datastore = ws.get_default_datastore()\n",
+					"datastore.upload_files(files = ['./SurfaceSales5_train.csv', './SurfaceSales5_test.csv'], target_path = 'dataset/', overwrite = True,show_progress = True)\n",
+					"\n",
+					"from azureml.core.dataset import Dataset\n",
+					"train_dataset = Dataset.Tabular.from_delimited_files(path=datastore.path('dataset/SurfaceSales5_train.csv'))"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"X_test = test\n",
+					"y_test = X_test.pop(target_column_name).values"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Leveraging model parallelism in AutoML for training"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"cellLanguage": "python",
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"time_series_settings = {\n",
+					"    'time_column_name': time_column_name,\n",
+					"    'grain_column_names': grain_column_names,\n",
+					"    'max_horizon': n_test_periods\n",
+					"}\n",
+					"\n",
+					"automl_config = AutoMLConfig(task='forecasting',\n",
+					"                             debug_log='automl_ss_sales_errors.log',\n",
+					"                             primary_metric='normalized_mean_absolute_error',\n",
+					"                             experiment_timeout_hours=0.25,\n",
+					"                             training_data=train_dataset,\n",
+					"                             label_column_name=target_column_name,\n",
+					"                             #compute_target=compute_target,\n",
+					"                             enable_early_stopping=True,\n",
+					"                             n_cross_validations=3,\n",
+					"                             verbosity=logging.INFO,\n",
+					"                             **time_series_settings)\n",
+					"                \n",
+					"\n",
+					"remote_run = experiment.submit(automl_config, show_output=True)"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Retrieving the Best Model"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"best_run, fitted_model = remote_run.get_output()\n",
+					"print(fitted_model.steps)\n",
+					"model_name = best_run.properties['model_name']\n",
+					"print(model_name)"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Forecasting using best model over test data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"y_predictions, X_trans = fitted_model.forecast(X_test)"
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Visualizing the results over test data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from pandas.tseries.frequencies import to_offset\n",
+					"from azureml.automl.core._vendor.automl.client.core.common import metrics\n",
+					"from matplotlib import pyplot as plt\n",
+					"from automl.client.core.common import constants\n",
+					"\n",
+					"def align_outputs(y_predicted, X_trans, X_test, y_test, target_column_name,\n",
+					"                  predicted_column_name='predicted',\n",
+					"                  horizon_colname='horizon_origin'):\n",
+					"\n",
+					"    if (horizon_colname in X_trans):\n",
+					"        df_fcst = pd.DataFrame({predicted_column_name: y_predicted,\n",
+					"                                horizon_colname: X_trans[horizon_colname]})\n",
+					"    else:\n",
+					"        df_fcst = pd.DataFrame({predicted_column_name: y_predicted})\n",
+					"\n",
+					"    # y and X outputs are aligned by forecast() function contract\n",
+					"    df_fcst.index = X_trans.index\n",
+					"\n",
+					"    # align original X_test to y_test\n",
+					"    X_test_full = X_test.copy()\n",
+					"    X_test_full[target_column_name] = y_test\n",
+					"\n",
+					"    # X_test_full's index does not include origin, so reset for merge\n",
+					"    df_fcst.reset_index(inplace=True)\n",
+					"    X_test_full = X_test_full.reset_index().drop(columns='index')\n",
+					"    together = df_fcst.merge(X_test_full, how='right')\n",
+					"\n",
+					"    # drop rows where prediction or actuals are nan\n",
+					"    clean = together[together[[target_column_name,\n",
+					"                               predicted_column_name]].notnull().all(axis=1)]\n",
+					"    return(clean)\n",
+					"\n",
+					"X_test[time_column_name] = pd.to_datetime(X_test[time_column_name])\n",
+					"df_all = align_outputs(y_predictions, X_trans, X_test, y_test, target_column_name)\n",
+					"\n",
+					"# use automl metrics module\n",
+					"scores = metrics.compute_metrics_regression(\n",
+					"    df_all['predicted'],\n",
+					"    df_all[target_column_name],\n",
+					"    list(constants.Metric.SCALAR_REGRESSION_SET),\n",
+					"    None, None, None)\n",
+					"\n",
+					"print(\"[Test data scores]\\n\")\n",
+					"for key, value in scores.items():    \n",
+					"    print('{}:   {:.3f}'.format(key, value))\n",
+					"    \n",
+					""
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Plot outputs\n",
+					"fig = plt.figure()\n",
+					"fig.set_figwidth(10)\n",
+					"fig.set_figheight(6)\n",
+					"test_pred = plt.scatter(df_all[target_column_name], df_all['predicted'], color='r',s=10)\n",
+					"test_test = plt.scatter(df_all[target_column_name], df_all[target_column_name], color='g',s=10)\n",
+					"plt.legend((test_pred, test_test), ('Prediction', 'Actual'), loc='upper left', fontsize=12)\n",
+					"plt.show()"
+				],
+				"execution_count": 18
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Operationalizing the trained model for real-time scoring over operational data\n",
+					"\n",
+					"+ Deployment\n",
+					"+ ML-Ops Pipeline - CI/CD\n",
+					"+ Monitoring\n",
+					""
+				]
+			}
+		]
+	}
+}

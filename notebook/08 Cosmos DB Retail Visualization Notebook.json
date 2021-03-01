@@ -1,0 +1,390 @@
+{
+	"name": "08 Cosmos DB Retail Visualization Notebook",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SparkPool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/506e86fc-853c-4557-a6e5-ad72114efd2b/resourceGroups/CDP-VISION-DEMO-RG/providers/Microsoft.Synapse/workspaces/synretailcdpprod/bigDataPools/SparkPool01",
+				"name": "SparkPool01",
+				"type": "Spark",
+				"endpoint": "https://synretailcdpprod.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "2.4",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28
+			}
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Azure Synapse Link integration with Azure Cosmos DB and Azure Synapse Analytics\n",
+					"<p>Today's applications are required to be highly responsive and always online. To achieve low latency and high availability, instances of these applications need to be deployed in datacenters that are close to their users. Applications need to respond in real time to large changes in usage at peak hours, store ever increasing volumes of data, and make this data available to users in milliseconds.</p>\n",
+					"<p>Azure Cosmos DB is Microsoft's globally distributed, multi-model database service. With a click of a button, Cosmos DB enables you to elastically and independently scale throughput and storage across any number of Azure regions worldwide. You can elastically scale throughput and storage, and take advantage of fast, single-digit-millisecond data access using your favorite API including: SQL, MongoDB, Cassandra, Tables, or Gremlin. Cosmos DB provides comprehensive service level agreements (SLAs) for throughput, latency, availability, and consistency guarantees, something no other database service offers.</p>\n",
+					"<p>In this demo we have made use of linked service which connects Azure Synapse with Azure Cosmos DB.</p>\n",
+					"<img src=\"https://labworkspace123654.blob.core.windows.net/salesdata/Retail%20Image%2020200610.jpg\" alt=\"Retail Store\" width=\"80%\"/>\n",
+					""
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Installing required Libraries\n",
+					"<p style=\"color:green\">Even though Synapse comes with a bunch of pre-installed Python libraries, we can also install certain other libraries required to write the code.\n",
+					"\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# All libraries and dependencies imported\n",
+					"import pip\n",
+					"pip.main(['install', 'folium'])\n",
+					"pip.main(['install', 'pandasql'])\n",
+					"########################################################\n",
+					"import numpy as np\n",
+					"import pandasql as ps\n",
+					"import pandas as pd\n",
+					"import seaborn as sns\n",
+					"import folium\n",
+					"import matplotlib.pyplot as plt\n",
+					"from folium.plugins import HeatMap\n",
+					"from pyspark.sql.functions import explode"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Cosmos DB Linked Service\n",
+					"<p>Now, we can directly load data from the Cosmos DB into Spark Dataframe using Azure Synapse Linked Service. All we need to do is right click on the collection <i> (which has Analytical Storage enabled while creation) </i> and from the options displayed, choose \"Load to dataframe\".\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"_rid"
+							],
+							"values": [
+								"_ts"
+							],
+							"yLabel": "_ts",
+							"xLabel": "_rid",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "\"{\\\"_ts\\\":{\\\"7OAEAOIU9yCBhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCChB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCDhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCEhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCFhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCGhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCHhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCIhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCJhB4AAAAAAA==\\\":1592593657,\\\"7OAEAOIU9yCKhB4AAAAAAA==\\\":1592593657}}\"",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"# Read from Cosmos DB analytical store into a Spark DataFrame and display 10 rows from the DataFrame\n",
+					"# To select a preferred list of regions in a multi-region Cosmos DB account, add .option(\"spark.cosmos.preferredRegions\", \"<Region1>,<Region2>\")\n",
+					"\n",
+					"df = spark.read\\\n",
+					"    .format(\"cosmos.olap\")\\\n",
+					"    .option(\"spark.synapse.linkedService\", \"cosmosretailposdata\")\\\n",
+					"    .option(\"spark.cosmos.container\", \"POSTransactions\")\\\n",
+					"    .load()\n",
+					"\n",
+					"display(df.limit(10))"
+				],
+				"attachments": null,
+				"execution_count": 5
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Loading data from Azure Cosmos DB\n",
+					"Let's load the most recent data into Spark data frame from the Azure Cosmos DB."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 1,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"Id"
+							],
+							"values": [
+								"CustomerId"
+							],
+							"yLabel": "CustomerId",
+							"xLabel": "Id",
+							"aggregation": "SUM",
+							"aggByBackend": false
+						},
+						"aggData": "\"{\\\"CustomerId\\\":{\\\"d0f916a4-b274-11ea-ae02-000d3af73555\\\":22830050,\\\"d0f916a5-b274-11ea-ae02-000d3af73555\\\":11415026,\\\"d0f916a6-b274-11ea-ae02-000d3af73555\\\":11415027,\\\"d0f916a7-b274-11ea-ae02-000d3af73555\\\":22830054,\\\"d0f916a8-b274-11ea-ae02-000d3af73555\\\":11415027,\\\"d0f916a9-b274-11ea-ae02-000d3af73555\\\":34245081,\\\"d0f916aa-b274-11ea-ae02-000d3af73555\\\":22830054,\\\"d0f916ab-b274-11ea-ae02-000d3af73555\\\":34245081,\\\"d0f916ac-b274-11ea-ae02-000d3af73555\\\":11415027,\\\"d0f916ad-b274-11ea-ae02-000d3af73555\\\":34245081,\\\"d0f916ae-b274-11ea-ae02-000d3af73555\\\":34245084,\\\"d0f916af-b274-11ea-ae02-000d3af73555\\\":34245084,\\\"d0f916b0-b274-11ea-ae02-000d3af73555\\\":22830056,\\\"d0f916b1-b274-11ea-ae02-000d3af73555\\\":22830056,\\\"d0f916b2-b274-11ea-ae02-000d3af73555\\\":34245084,\\\"d0f916b3-b274-11ea-ae02-000d3af73555\\\":22830056,\\\"d0f916b4-b274-11ea-ae02-000d3af73555\\\":11415028,\\\"d0f916b5-b274-11ea-ae02-000d3af73555\\\":34245084,\\\"d0f916b6-b274-11ea-ae02-000d3af73555\\\":11415028,\\\"d0f916b7-b274-11ea-ae02-000d3af73555\\\":34245084,\\\"d0f916b8-b274-11ea-ae02-000d3af73555\\\":11415028,\\\"d0f916b9-b274-11ea-ae02-000d3af73555\\\":34245087,\\\"d0f916ba-b274-11ea-ae02-000d3af73555\\\":22830058,\\\"d0f916bb-b274-11ea-ae02-000d3af73555\\\":22830058,\\\"d1916eb3-b274-11ea-8985-000d3a06b36c\\\":3659154,\\\"d1916eb4-b274-11ea-8985-000d3a06b36c\\\":1219718,\\\"d1916eb5-b274-11ea-8985-000d3a06b36c\\\":3659154,\\\"d1916eb6-b274-11ea-8985-000d3a06b36c\\\":3659154,\\\"d1916eb7-b274-11ea-8985-000d3a06b36c\\\":1219718,\\\"d1916eb8-b274-11ea-8985-000d3a06b36c\\\":2439436,\\\"d1916eb9-b274-11ea-8985-000d3a06b36c\\\":2439436,\\\"d1916eba-b274-11ea-8985-000d3a06b36c\\\":1219718,\\\"d1916ebb-b274-11ea-8985-000d3a06b36c\\\":2439436,\\\"d1916ebc-b274-11ea-8985-000d3a06b36c\\\":2439436,\\\"d1916ebd-b274-11ea-8985-000d3a06b36c\\\":3659154,\\\"d1916ebe-b274-11ea-8985-000d3a06b36c\\\":2439436,\\\"d1916ebf-b274-11ea-8985-000d3a06b36c\\\":3659157,\\\"d1916ec0-b274-11ea-8985-000d3a06b36c\\\":1219719,\\\"d1916ec1-b274-11ea-8985-000d3a06b36c\\\":1219719,\\\"d1916ec2-b274-11ea-8985-000d3a06b36c\\\":2439438,\\\"d1916ec3-b274-11ea-8985-000d3a06b36c\\\":1219720,\\\"d1916ec4-b274-11ea-8985-000d3a06b36c\\\":1219720,\\\"d1916ec5-b274-11ea-8985-000d3a06b36c\\\":3659160,\\\"d1916ec6-b274-11ea-8985-000d3a06b36c\\\":2439440,\\\"d1916ec7-b274-11ea-8985-000d3a06b36c\\\":1219720,\\\"d1916ec8-b274-11ea-8985-000d3a06b36c\\\":2439440,\\\"d1916ec9-b274-11ea-8985-000d3a06b36c\\\":3659160,\\\"d1916eca-b274-11ea-8985-000d3a06b36c\\\":3659160,\\\"d1916ecb-b274-11ea-8985-000d3a06b36c\\\":1219720,\\\"d22b4cfc-b274-11ea-ae02-000d3af73555\\\":11415029}}\"",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"df.createOrReplaceTempView(\"max_date\")\n",
+					"date_df = spark.sql(\"SELECT max(TransactionDate) as TransactionDate from max_date \")\n",
+					"recent_date = date_df.collect()[0][0]\n",
+					"df.createOrReplaceTempView(\"date_data\") \n",
+					"query =f\"SELECT Id, CustomerId, PaymentType, City, Latitude, Longitude, CardNumber, TransactionDate,Hour, Minute, TotalAmount, OrderItems from date_data where TransactionDate ='{recent_date}'\"\n",
+					"recent_data_df = spark.sql(query)\n",
+					"recent_data_df = df.select(recent_data_df.Id, recent_data_df.CustomerId, recent_data_df.PaymentType,recent_data_df.Hour,recent_data_df.Minute, recent_data_df.City, recent_data_df.Latitude, recent_data_df.Longitude, recent_data_df.CardNumber, recent_data_df.TransactionDate, recent_data_df.TotalAmount, explode(\"OrderItems\").alias(\"OrderItem\")).select(\"Id\",\"CustomerId\",\"Hour\",\"Minute\",\"PaymentType\",\"City\",\"Latitude\",\"Longitude\",\"CardNumber\",\"TransactionDate\",\"TotalAmount\",\"OrderItem.ProductName\",\"OrderItem.Cost\",\"OrderItem.Category\",\"OrderItem.Quantity\",\"OrderItem.Cost\",\"OrderItem.UsedCoupon\",\"OrderItem.CouponExpDate\")\n",
+					"display(recent_data_df.limit(100))"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Product withe highest TotalAmount\n",
+					"Now let us see how the product sales have happened in the recent time and which product among different categories has generated maximum amount.\n",
+					"We can now do this by using in-Synapse visualization.\n",
+					"<p><b>Instructions:</b>\n",
+					"<ol>\n",
+					"    <li>Click on the <i>Chart</i>\n",
+					"    <li>Click on the <i>View options</i>\n",
+					"    <li>Select <i>bar chart</i> from the <i>Chart Type</i> drop down list\n",
+					"    <li>Select <i>ProductName</i> from the <i>Key</i> drop down list\n",
+					"    <li>Slelect <i>TotalAmount</i> from the <i>Values</i> drop down list\n",
+					"    <li>Select <i>Category</i> from <i>Series</i> drop down list\n",
+					"    <li>Select <i>sum</i> from <i>Aggregation</i> drop down list\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 2,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"ProductName"
+							],
+							"values": [
+								"TotalAmount"
+							],
+							"yLabel": "TotalAmount",
+							"xLabel": "ProductName",
+							"aggregation": "SUM",
+							"aggByBackend": true,
+							"isValid": true,
+							"inValidMsg": null,
+							"stacked": true,
+							"series": "Category"
+						},
+						"aggData": "\"{\\\"Foot Wear\\\":{\\\"Black with red sole shoes\\\":93100769,\\\"Beach Shoes\\\":85131846,\\\"Gray with white sole shoes\\\":97862938,\\\"White Shoes\\\":86785385,\\\"Brown Shoes\\\":90190086,\\\"Black Shoes\\\":82354756,\\\"Stemware\\\":0,\\\"Dinnerware\\\":0,\\\"Yellow mature Dutch cheese\\\":0,\\\"Cheese chunk\\\":0,\\\"Table Lamps\\\":0,\\\"Pendants\\\":0,\\\"Surf Boards\\\":0,\\\"Wineglass\\\":0,\\\"Cheese circle\\\":0,\\\"Table Linens\\\":0,\\\"Wine Storage\\\":0,\\\"Lanterns\\\":0,\\\"Frying Pan\\\":0,\\\"Unbreakable wineglass\\\":0,\\\"Floor Lamps\\\":0},\\\"House Hold\\\":{\\\"Stemware\\\":92751282,\\\"Table Lamps\\\":77803644,\\\"Frying Pan\\\":79400560,\\\"Unbreakable wineglass\\\":120679896,\\\"Table Linens\\\":77136112,\\\"Dinnerware\\\":100464543,\\\"Floor Lamps\\\":119677553,\\\"Lanterns\\\":79898650,\\\"Wine Storage\\\":93967009,\\\"Wineglass\\\":77002058,\\\"White Shoes\\\":0,\\\"Gray with white sole shoes\\\":0,\\\"Yellow mature Dutch cheese\\\":0,\\\"Cheese chunk\\\":0,\\\"Pendants\\\":0,\\\"Surf Boards\\\":0,\\\"Brown Shoes\\\":0,\\\"Black with red sole shoes\\\":0,\\\"Cheese circle\\\":0,\\\"Beach Shoes\\\":0,\\\"Black Shoes\\\":0},\\\"Grocery\\\":{\\\"Cheese circle\\\":66971710,\\\"Yellow mature Dutch cheese\\\":68563436,\\\"Cheese chunk\\\":69577075,\\\"Stemware\\\":0,\\\"Dinnerware\\\":0,\\\"White Shoes\\\":0,\\\"Gray with white sole shoes\\\":0,\\\"Table Lamps\\\":0,\\\"Pendants\\\":0,\\\"Surf Boards\\\":0,\\\"Brown Shoes\\\":0,\\\"Black with red sole shoes\\\":0,\\\"Wineglass\\\":0,\\\"Table Linens\\\":0,\\\"Wine Storage\\\":0,\\\"Lanterns\\\":0,\\\"Frying Pan\\\":0,\\\"Unbreakable wineglass\\\":0,\\\"Beach Shoes\\\":0,\\\"Black Shoes\\\":0,\\\"Floor Lamps\\\":0},\\\"Sports\\\":{\\\"Surf Boards\\\":273828218,\\\"Stemware\\\":0,\\\"Dinnerware\\\":0,\\\"White Shoes\\\":0,\\\"Gray with white sole shoes\\\":0,\\\"Yellow mature Dutch cheese\\\":0,\\\"Cheese chunk\\\":0,\\\"Table Lamps\\\":0,\\\"Pendants\\\":0,\\\"Brown Shoes\\\":0,\\\"Black with red sole shoes\\\":0,\\\"Wineglass\\\":0,\\\"Cheese circle\\\":0,\\\"Table Linens\\\":0,\\\"Wine Storage\\\":0,\\\"Lanterns\\\":0,\\\"Frying Pan\\\":0,\\\"Unbreakable wineglass\\\":0,\\\"Beach Shoes\\\":0,\\\"Black Shoes\\\":0,\\\"Floor Lamps\\\":0},\\\"Jewellery\\\":{\\\"Pendants\\\":420328508,\\\"Stemware\\\":0,\\\"Dinnerware\\\":0,\\\"White Shoes\\\":0,\\\"Gray with white sole shoes\\\":0,\\\"Yellow mature Dutch cheese\\\":0,\\\"Cheese chunk\\\":0,\\\"Table Lamps\\\":0,\\\"Surf Boards\\\":0,\\\"Brown Shoes\\\":0,\\\"Black with red sole shoes\\\":0,\\\"Wineglass\\\":0,\\\"Cheese circle\\\":0,\\\"Table Linens\\\":0,\\\"Wine Storage\\\":0,\\\"Lanterns\\\":0,\\\"Frying Pan\\\":0,\\\"Unbreakable wineglass\\\":0,\\\"Beach Shoes\\\":0,\\\"Black Shoes\\\":0,\\\"Floor Lamps\\\":0}}\"",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"product_sold = df.select(recent_data_df.Id, recent_data_df.CustomerId, recent_data_df.PaymentType,recent_data_df.Hour,recent_data_df.Minute, recent_data_df.City, recent_data_df.Latitude, recent_data_df.Longitude, recent_data_df.CardNumber, recent_data_df.TransactionDate, recent_data_df.TotalAmount, explode(\"OrderItems\").alias(\"OrderItem\")).select(\"Id\",\"CustomerId\",\"Hour\",\"Minute\",\"PaymentType\",\"City\",\"Latitude\",\"Longitude\",\"CardNumber\",\"TransactionDate\",\"TotalAmount\",\"OrderItem.ProductName\",\"OrderItem.Cost\",\"OrderItem.Category\",\"OrderItem.Quantity\",\"OrderItem.Cost\",\"OrderItem.UsedCoupon\",\"OrderItem.CouponExpDate\")\n",
+					"display(product_sold)"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Sales across some of the major cities\n",
+					"<p>Let us now see which product category was more popular across some of the major cities in the US.<br>\n",
+					"We will use in-Synapse visualization to showcase the results.</p>\n",
+					"\n",
+					"<p><b>Instructions:</b>\n",
+					"<ol>\n",
+					"    <li>Click on the <i>Chart</i>\n",
+					"    <li>Click on the <i>View options</i>\n",
+					"    <li>Select <i>bar chart</i> from the <i>Chart Type</i> drop down list\n",
+					"    <li>Select <i>City</i> from the <i>Key</i> drop down list\n",
+					"    <li>Slelect all categories from the <i>Values</i> drop down list except 'City'\n",
+					"    <li>Select <i>sum</i> from <i>Aggregation</i> drop down list\n",
+					"\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"diagram": {
+						"activateDiagramType": 2,
+						"chartConfig": {
+							"category": "bar",
+							"keys": [
+								"City"
+							],
+							"values": [
+								"Foot_Wear",
+								"Grocery",
+								"House_Hold",
+								"Jewellery",
+								"Sports"
+							],
+							"yLabel": "Foot_Wear,Grocery,House_Hold,Jewellery,Sports",
+							"xLabel": "City",
+							"aggregation": "SUM",
+							"aggByBackend": false,
+							"isValid": true,
+							"inValidMsg": null
+						},
+						"aggData": "\"{\\\"Foot_Wear\\\":{\\\"Chicago\\\":532087,\\\"Los Angles\\\":42819,\\\"Miami\\\":642545,\\\"New York\\\":536909,\\\"Philadelphia\\\":267394,\\\"San Diego\\\":266860,\\\"San Francisco\\\":212055,\\\"San Jose\\\":322046,\\\"Seattle\\\":320193},\\\"Grocery\\\":{\\\"Chicago\\\":267681,\\\"Los Angles\\\":21156,\\\"Miami\\\":319978,\\\"New York\\\":268971,\\\"Philadelphia\\\":133900,\\\"San Diego\\\":133633,\\\"San Francisco\\\":106991,\\\"San Jose\\\":160947,\\\"Seattle\\\":159747},\\\"House_Hold\\\":{\\\"Chicago\\\":884396,\\\"Los Angles\\\":70968,\\\"Miami\\\":1073273,\\\"New York\\\":895290,\\\"Philadelphia\\\":442768,\\\"San Diego\\\":446692,\\\"San Francisco\\\":355339,\\\"San Jose\\\":536311,\\\"Seattle\\\":533782},\\\"Jewellery\\\":{\\\"Chicago\\\":88391,\\\"Los Angles\\\":7208,\\\"Miami\\\":107066,\\\"New York\\\":89950,\\\"Philadelphia\\\":44493,\\\"San Diego\\\":44573,\\\"San Francisco\\\":35769,\\\"San Jose\\\":53851,\\\"Seattle\\\":52253},\\\"Sports\\\":{\\\"Chicago\\\":88391,\\\"Los Angles\\\":7208,\\\"Miami\\\":107066,\\\"New York\\\":89950,\\\"Philadelphia\\\":44493,\\\"San Diego\\\":44573,\\\"San Francisco\\\":35769,\\\"San Jose\\\":53851,\\\"Seattle\\\":52253}}\"",
+						"isSummary": false,
+						"previewData": {
+							"filter": null
+						},
+						"isSql": false
+					}
+				},
+				"source": [
+					"product_sold.createOrReplaceTempView(\"date_data1\")\n",
+					"\n",
+					"q_ftw=\"select distinct City, sum(Quantity) as Foot_Wear from date_data1 where Category='Foot Wear' group by City \"\n",
+					"spftw_df = spark.sql(q_ftw)\n",
+					"\n",
+					"q_gr=\"select distinct City, sum(Quantity) as Grocery from date_data1 where Category='Grocery' group by City \"\n",
+					"spgcr_df = spark.sql(q_gr)\n",
+					"\n",
+					"q_hho =\"select distinct City, sum(Quantity) as House_Hold  from date_data1 where Category='House Hold' group by City\"\n",
+					"sphho_df = spark.sql(q_hho)\n",
+					"\n",
+					"q_jw =\"select distinct City, sum(Quantity) as Jewellery  from date_data1 where Category='Jewellery' group by City\"\n",
+					"spjw_df = spark.sql(q_jw)\n",
+					"\n",
+					"q_spt=\"select distinct City, sum(Quantity) as Sports  from date_data1 where Category='Jewellery' group by City\"\n",
+					"spspt_df = spark.sql(q_spt)\n",
+					"\n",
+					"spftw_df.createOrReplaceTempView(\"tempftw_df\")\n",
+					"spgcr_df.createOrReplaceTempView(\"tempgcr_df\")\n",
+					"sphho_df.createOrReplaceTempView(\"temphho_df\")\n",
+					"spjw_df.createOrReplaceTempView(\"tempjw_df\")\n",
+					"spspt_df.createOrReplaceTempView(\"tempspt_df\")\n",
+					"\n",
+					"q_com =\"select distinct a.City, a.Foot_Wear, b.Grocery, c.House_Hold, d.Jewellery, e.Sports \\\n",
+					"from tempftw_df a, tempgcr_df b, temphho_df c,tempjw_df d,tempspt_df e where a.City==b.City and a.City==c.City \\\n",
+					"and a.City==d.City and a.City==e.City order by  a.City\"\n",
+					"spcombinedf = spark.sql(q_com)\n",
+					"display(spcombinedf)"
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Visualization using Custom Library\n",
+					"Let us now use external libraries to generate some visualizations. <br>\n",
+					"Here, we have used <i> matplotlib </i> library to generate bar chart as shown below."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"#convert to a pandas dataframe\n",
+					"pd_combineddf = spcombinedf.select([\"*\"]).toPandas()\n",
+					"\n",
+					"#define the color soace for the chart\n",
+					"colors = plt.cm.GnBu(np.linspace(0.5,1,5))\n",
+					"\n",
+					"def plotcity(n):\n",
+					" plotf = pd_combineddf[:n].sort_values(by='City').plot(kind='bar',\n",
+					" fontsize=12,\n",
+					" #colormap=\"GnBu\",\n",
+					" color=colors,\n",
+					" figsize=(10,5))\n",
+					" fig = plotf.get_figure()\n",
+					" plt.grid(linestyle='--')\n",
+					" plt.xlabel('City', fontsize=16)\n",
+					" plt.ylabel('Sales', fontsize=16)\n",
+					" plt.title('Sales by City'.format(n), fontsize=20)\n",
+					" plt.tight_layout()\n",
+					" plt.xticks([0.001,1.0, 2.0, 3.0,4.0,5.0,6.0,7.0,8.0],\n",
+					" [\"Chicago\",\"Los Angles\",\"Miami\",\"New York\",\"Philadelphia\",\"San Diego\",\"San Francisco\",\"San Jose\",\"Seattle\"])\n",
+					" filename = 'Fig_Stn_top{}.png'.format(n)\n",
+					" fig.savefig(filename);\n",
+					" return\n",
+					" \n",
+					"plotcity(9) \n",
+					"plt.show() "
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					" ## Miami Sales Heat Map\n",
+					" Here, we have used <i>folium<i> library to showcase hot spots in the Miami city \n",
+					"\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"recent_data_df.createOrReplaceTempView(\"miami_data\")\n",
+					"miami_loc = spark.sql(\"SELECT Latitude, Longitude from miami_data where City ='Miami'\")\n",
+					"\n",
+					"# Take a small sample of the coordinates from Miami sales\n",
+					"coordinates = miami_loc.select(\"Latitude\",\"Longitude\").toPandas().sample(frac =.002) \n",
+					"\n",
+					"# Create Heat Map from coordinates\n",
+					"heatMap = HeatMap(coordinates)\n",
+					"\n",
+					"# Calculate approximated center point for our map view\n",
+					"center = [25.793185, -80.229348]  \n",
+					"\n",
+					"# Create Map\n",
+					"map = folium.Map(width=1500,height=800,location=center, zoom_start=14)\n",
+					"\n",
+					"# Adds the heatmap to the map and returns the map itself so this will be displayed as a result\n",
+					"map.add_child(heatMap) \n",
+					"map.save('output.html')\n",
+					"html_file_content = open('output.html', 'r').read()\n",
+					"displayHTML(html_file_content)"
+				],
+				"execution_count": 10
+			}
+		]
+	}
+}

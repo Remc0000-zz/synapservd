@@ -1,0 +1,70 @@
+{
+	"name": "SourceDataset_eub",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "datalakeretailcdpprod",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "71A159B1-7DAE-4B6F-B206-17715D37A46B_2090_0-1.parquet",
+				"fileSystem": "twitterdata"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "Time",
+				"type": "UTF8"
+			},
+			{
+				"name": "Hashtag",
+				"type": "UTF8"
+			},
+			{
+				"name": "Tweet",
+				"type": "UTF8"
+			},
+			{
+				"name": "City",
+				"type": "UTF8"
+			},
+			{
+				"name": "UserName",
+				"type": "UTF8"
+			},
+			{
+				"name": "RetweetCount",
+				"type": "INT_64"
+			},
+			{
+				"name": "FavouriteCount",
+				"type": "INT_64"
+			},
+			{
+				"name": "Sentiment",
+				"type": "UTF8"
+			},
+			{
+				"name": "SentimentScore",
+				"type": "INT_64"
+			},
+			{
+				"name": "IsRetweet",
+				"type": "INT_64"
+			},
+			{
+				"name": "HourOfDay",
+				"type": "UTF8"
+			},
+			{
+				"name": "Language",
+				"type": "UTF8"
+			}
+		]
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

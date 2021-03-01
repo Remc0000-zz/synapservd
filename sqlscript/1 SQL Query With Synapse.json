@@ -1,0 +1,16 @@
+{
+	"name": "1 SQL Query With Synapse",
+	"properties": {
+		"content": {
+			"query": "SELECT  FORMAT(COUNT_BIG(1),'###,###,###') as TotalCount  FROM dbo.Sales(nolock)\n\n\n\n--let's execute the below query \n-- We have Data from SALES,Products,MillennialCustomers and Twitter.\n\nselect CustKey, UserName, Emailstatus, Department, [Twitter Sentiment], cast(round(TotalSale/10000,0) as int) as Revenue\nfrom (SELECT P.Department, TA.Sentiment AS [Twitter Sentiment],\n        sum(S.TotalAmount) as TotalSale,\n        M.UserName, M.Emailstatus, M.CustKey\n    FROM dbo.Sales as S\n        inner join dbo.Products as P on P.Products_ID= S.ProductId inner join [dbo].[Dim_Customer] DC\n        left outer join dbo.[TwitterAnalytics] TA on TA.[username]=DC.[userName] on DC.[id]=S.[Customerid]\n        inner join dbo.[MillennialCustomers] as M on M.CustKey = S.Customerid\n    where DC.[FullName]!='N/A'\n    group by DC.[FullName],P.Department,TA.Sentiment,M.UserName,M.CustKey,M.Emailstatus)\n  as result\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"poolName": "SQLPool01",
+				"databaseName": "SQLPool01"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}

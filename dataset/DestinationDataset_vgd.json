@@ -1,0 +1,17 @@
+{
+	"name": "DestinationDataset_vgd",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "sqlpool01",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "ADMIN",
+			"table": "TEST"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}
