@@ -1,0 +1,189 @@
+{
+	"name": "DelimitedText2",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "BlobRemco",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "demoauditfile.csv",
+				"folderPath": "SQLLogs",
+				"container": "adfdemo"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "8/25/2020 7:53 AM",
+				"type": "String"
+			},
+			{
+				"name": "11",
+				"type": "String"
+			},
+			{
+				"name": "EX  ",
+				"type": "String"
+			},
+			{
+				"name": "13",
+				"type": "String"
+			},
+			{
+				"name": "0x00000000000000000000000000000020",
+				"type": "String"
+			},
+			{
+				"name": "05",
+				"type": "String"
+			},
+			{
+				"name": "53",
+				"type": "String"
+			},
+			{
+				"name": "259",
+				"type": "String"
+			},
+			{
+				"name": "18",
+				"type": "String"
+			},
+			{
+				"name": "09",
+				"type": "String"
+			},
+			{
+				"name": "010",
+				"type": "String"
+			},
+			{
+				"name": "-1008137134",
+				"type": "String"
+			},
+			{
+				"name": "X ",
+				"type": "String"
+			},
+			{
+				"name": "EUROPE\\jackyho13",
+				"type": "String"
+			},
+			{
+				"name": "EUROPE\\jackyho14",
+				"type": "String"
+			},
+			{
+				"name": "0x010500000000000C0100000015519B7F89D3B54EBD2C9633E723AEDE",
+				"type": "String"
+			},
+			{
+				"name": "dbo",
+				"type": "String"
+			},
+			{
+				"name": "Prop_17",
+				"type": "String"
+			},
+			{
+				"name": "NULL",
+				"type": "String"
+			},
+			{
+				"name": "Prop_19",
+				"type": "String"
+			},
+			{
+				"name": "JACKYHOWIN123A\\SQL2019",
+				"type": "String"
+			},
+			{
+				"name": "master",
+				"type": "String"
+			},
+			{
+				"name": "sys",
+				"type": "String"
+			},
+			{
+				"name": "xp_cmdshell",
+				"type": "String"
+			},
+			{
+				"name": "EXEC xp_cmdshell 'DIR E:\\SQL2017\\SQL_Tempdb*.* /b'",
+				"type": "String"
+			},
+			{
+				"name": "Prop_25",
+				"type": "String"
+			},
+			{
+				"name": "D:\\SQL2019\\SQL_Audit\\Audit_xp_cmdshell_9208E581-5808-4444-ACA2-5E7D549F0397_0_132428155713860000.sqlaudit",
+				"type": "String"
+			},
+			{
+				"name": "6144",
+				"type": "String"
+			},
+			{
+				"name": "028",
+				"type": "String"
+			},
+			{
+				"name": "Prop_29",
+				"type": "String"
+			},
+			{
+				"name": "130",
+				"type": "String"
+			},
+			{
+				"name": "0xC4483CAB2D556B4CB9F3FEB36B736406",
+				"type": "String"
+			},
+			{
+				"name": "107540",
+				"type": "String"
+			},
+			{
+				"name": "local machine",
+				"type": "String"
+			},
+			{
+				"name": "Microsoft SQL Server Management Studio - Query",
+				"type": "String"
+			},
+			{
+				"name": "035",
+				"type": "String"
+			},
+			{
+				"name": "036",
+				"type": "String"
+			},
+			{
+				"name": "037",
+				"type": "String"
+			},
+			{
+				"name": "C78F62BE-A1B4-447F-8648-7C74CD53CFD0",
+				"type": "String"
+			},
+			{
+				"name": "Prop_39",
+				"type": "String"
+			},
+			{
+				"name": "JACKYHOWIN123A",
+				"type": "String"
+			}
+		]
+	}
+}
