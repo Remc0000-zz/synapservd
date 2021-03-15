@@ -14,6 +14,7 @@
 					"value": "@concat('Log_',utcnow())",
 					"type": "Expression"
 				},
+				"folderPath": "sqllogs",
 				"fileSystem": "rvdsynapseadlsfilesystem"
 			},
 			"compressionCodec": "snappy"
