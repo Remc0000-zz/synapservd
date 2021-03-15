@@ -1,0 +1,32 @@
+{
+	"name": "SQLAudit",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "rvdsynapsealds",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@concat('Log_',utcnow())",
+					"type": "Expression"
+				},
+				"fileSystem": "rvdsynapseadlsfilesystem"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "name",
+				"type": "UTF8"
+			},
+			{
+				"name": "population",
+				"type": "INT32"
+			}
+		]
+	}
+}
